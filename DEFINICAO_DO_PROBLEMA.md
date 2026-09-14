@@ -25,8 +25,11 @@ esse isolamento é o problema deste grupo.
   específicos (baseline HU+morfologia vs. region growing).
 - **Measurable**: Dice Coefficient (meta ≥ 0,85) e IoU (meta ≥ 0,75), ambos com
   intervalo de confiança de 95% por bootstrap (≥ 500 reamostragens).
-- **Achievable**: métodos clássicos de visão computacional, sem depender de
-  treinamento de rede neural do zero; validados na literatura para este problema.
+- **Achievable**: dois métodos clássicos de visão computacional (validados na
+  literatura) para a comparação principal, complementados por uma U-Net 2D treinada
+  como terceira abordagem — exigida explicitamente pelo feedback do Checkpoint 1 para
+  a etapa de Mineração — com escopo de treino ajustado à infraestrutura disponível
+  (CPU, sem GPU local).
 - **Relevant**: segmentação do parênquima é pré-requisito necessário para qualquer
   detecção/classificação de nódulos pulmonares — o objetivo clínico que dá sentido ao
   projeto.
@@ -56,7 +59,10 @@ acurácia não é usada como métrica de avaliação da segmentação neste proj
 ## Escopo (duas fases encadeadas)
 
 1. **Segmentação do parênquima pulmonar** (foco deste checkpoint): baseline
-   (threshold −600HU + morfologia) vs. region growing, avaliados por Dice/IoU.
+   (threshold −600HU + morfologia) vs. region growing vs. U-Net 2D (esta última exigida
+   no feedback do Checkpoint 1 para a etapa de Mineração), avaliados por Dice/IoU. Meta:
+   Dice ≥ 0,85 para os métodos clássicos; Dice ≥ 0,75 para a U-Net (meta própria definida
+   no feedback, dado o escopo de treino reduzido por rodar em CPU).
 2. **Detecção de nódulos pulmonares** (extensão incorporada depois do Sprint 6, usando
    o pulmão já segmentado): candidatos via blob detection, avaliados no padrão FROC do
    próprio desafio LUNA16, com um classificador de redução de falsos positivos.

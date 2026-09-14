@@ -87,6 +87,12 @@ Ver também os docstrings de cada função (código é a fonte de verdade; resum
 - Abertura morfológica (erosão seguida de dilatação) com elemento estruturante esférico
   de raio 1 voxel (`skimage.morphology.ball(1)`).
 
+**Nota sobre nomenclatura**: o feedback do professor sugere o caminho
+`src/preprocessing/segmentar_parenquima.py`. O grupo optou por manter a estrutura já
+existente e mais completa em `src/luna16/` (usada por 6 notebooks e 6 scripts) em vez
+de renomear um pacote funcional — a funcionalidade equivalente está em
+`src/luna16/baseline.py` (threshold + morfologia) e `src/luna16/region_growing.py`.
+
 **Region growing** (`src/luna16/region_growing.py`):
 - Sementes automáticas: threshold auxiliar −320 HU (só para localizar candidatos, nunca
   para decidir a fronteira final) → maiores componentes → semente = pico da transformada
