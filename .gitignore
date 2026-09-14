@@ -9,3 +9,6 @@ data/*
 !data/luna16/
 data/luna16/*
 !data/luna16/_lists/
+
+# Checkpoints de modelos
+*.pt
