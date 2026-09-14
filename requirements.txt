@@ -1,6 +1,14 @@
-numpy
-matplotlib
-pydicom
-SimpleITK
-scikit-learn
-requests
+numpy==2.5.2
+matplotlib==3.11.1
+pydicom==3.0.2
+SimpleITK==2.5.6
+scikit-learn==1.9.0
+requests==2.34.2
+pandas==3.0.5
+scipy==1.18.1
+scikit-image==0.26.0
+kaggle==2.2.4
+ipykernel==7.3.0
+nbconvert==7.17.1
+nbformat==5.11.1
+torch==2.14.0  # CPU: pip install torch --index-url https://download.pytorch.org/whl/cpu
