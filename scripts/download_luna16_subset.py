@@ -33,7 +33,7 @@ def _unzip_if_needed(dest_dir: Path, expected_name: str):
         zip_path.unlink()
 
 
-def _download_one(api: KaggleApi, name: str, dest_dir: Path, max_retries: int = 5):
+def _download_one(api: KaggleApi, name: str, dest_dir: Path, max_retries: int = 8):
     """Baixa um arquivo, esperando e tentando de novo se o Kaggle limitar a
     taxa de requisicoes (429 -- comum ao baixar muitos arquivos pequenos em
     sequencia rapida, principalmente no Colab)."""
@@ -43,7 +43,7 @@ def _download_one(api: KaggleApi, name: str, dest_dir: Path, max_retries: int = 
             return
         except Exception as e:
             if "429" in str(e) and attempt < max_retries:
-                wait = 15 * attempt  # espera crescente: 15s, 30s, 45s...
+                wait = 30 * attempt  # espera crescente: 30s, 60s, 90s...
                 print(f"    limite de requisicoes do Kaggle -- esperando {wait}s (tentativa {attempt}/{max_retries})", flush=True)
                 time.sleep(wait)
                 continue
@@ -65,7 +65,7 @@ def download_list(api: KaggleApi, list_path: Path, dest_dir: Path, label: str):
             continue
         dt = time.time() - t0
         print(f"[{label} {i}/{total}] ok ({dt:.1f}s) {basename}", flush=True)
-        time.sleep(0.3)  # pequena pausa entre arquivos, para nao provocar o limite de novo
+        time.sleep(1.5)  # pausa entre arquivos, para nao provocar o limite de novo
 
 
 def main():
