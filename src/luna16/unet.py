@@ -8,7 +8,7 @@ oficial. Este modulo existe para ter um modelo treinado real disponivel caso
 o professor exija isso literalmente para considerar a etapa de "Mineracao"
 concluida (ver PROJETO.md, secao "Contexto academico").
 
-Escopo deliberadamente limitado (CPU, sem GPU disponivel na maquina local):
+Escopo original deliberadamente limitado (CPU, sem GPU na maquina local):
 - Entrada 128x128 (fatias axiais redimensionadas) em vez da resolucao total
   (~266x266 apos reamostragem isotropica) -- mantem o treino em minutos, nao
   em horas, numa CPU comum.
@@ -17,11 +17,15 @@ Escopo deliberadamente limitado (CPU, sem GPU disponivel na maquina local):
 - Treinado sobre um subconjunto de fatias por paciente (as que contem pulmao
   na mascara de referencia, mais algumas de fundo), nao o volume 3D inteiro.
 
+Desde 14/09, `DEVICE` detecta GPU automaticamente (ex.: Colab) e
+`scripts/train_unet_baseline.py` aumenta o escopo (mais pacientes, mais
+epocas, rede maior) quando ha GPU disponivel -- o codigo continua
+funcionando igual em CPU, so mais devagar e com o escopo original.
+
 Isso e suficiente para produzir um numero real de Dice/IoU comparavel aos
 outros metodos (mesmo pipeline de pre-processamento e mesmas metricas -- ver
-`unet_segment_fn`), mas NAO e a versao final/otimizada do modelo. Expandir
-(mais epocas, mais fatias, resolucao maior, augmentation) fica registrado
-como trabalho futuro no relatorio.
+`unet_segment_fn`). Resolucao maior e augmentation continuam como possiveis
+melhorias futuras, mesmo com GPU.
 """
 from dataclasses import dataclass
 
@@ -31,6 +35,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 INPUT_SIZE = 128  # fatia redimensionada para NxN antes de entrar na rede
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class DiceLoss(nn.Module):
@@ -129,10 +135,15 @@ class UNetConfig:
 
 
 def load_trained_model(checkpoint_path: str = "data/luna16/unet_baseline.pt") -> SmallUNet2D:
-    """Carrega o checkpoint treinado por scripts/train_unet_baseline.py."""
-    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    """Carrega o checkpoint treinado por scripts/train_unet_baseline.py.
+
+    Usa GPU automaticamente se disponivel (DEVICE), tanto para carregar
+    quanto para inferencia -- funciona igual em CPU, so mais devagar.
+    """
+    checkpoint = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
     model = SmallUNet2D(base_ch=checkpoint.get("base_ch", 16))
     model.load_state_dict(checkpoint["model_state"])
+    model.to(DEVICE)
     model.eval()
     return model
 
@@ -151,13 +162,14 @@ def segment_with_unet(volume_hu: np.ndarray, model: SmallUNet2D) -> np.ndarray:
     z, h, w = volume_hu.shape
     mask = np.zeros((z, h, w), dtype=bool)
 
+    model.to(DEVICE)
     with torch.no_grad():
         for i in range(z):
             img = hu_to_input(volume_hu[i]).astype(np.float32)
             img_r = resize(img, (INPUT_SIZE, INPUT_SIZE), order=1, anti_aliasing=True, preserve_range=True)
-            x = torch.from_numpy(img_r).unsqueeze(0).unsqueeze(0)
+            x = torch.from_numpy(img_r).unsqueeze(0).unsqueeze(0).to(DEVICE)
             logits = model(x)
-            probs = torch.sigmoid(logits).squeeze().numpy()
+            probs = torch.sigmoid(logits).squeeze().cpu().numpy()
             probs_full = resize(probs, (h, w), order=1, anti_aliasing=True, preserve_range=True)
             mask[i] = probs_full > 0.5
 

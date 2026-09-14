@@ -27,17 +27,30 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from luna16.io import load_ct, load_reference_mask
 from luna16.preprocessing import clean_hu, denoise, resample_isotropic
-from luna16.unet import SmallUNet2D, BCEDiceLoss, hu_to_input, INPUT_SIZE
+from luna16.unet import SmallUNet2D, BCEDiceLoss, hu_to_input, INPUT_SIZE, DEVICE
 
 SEED = 42
 DATA_DIR = Path("data/luna16")
 CHECKPOINT_PATH = DATA_DIR / "unet_baseline.pt"
 
-# --- escopo deliberadamente limitado (ver src/luna16/unet.py) -------------
-N_TRAIN_PATIENTS = 40      # de 124 disponiveis no split de treino
-POS_SLICES_PER_PATIENT = 12   # fatias com pulmao na referencia
-NEG_SLICES_PER_PATIENT = 4    # fatias de fundo (sem pulmao), p/ balancear
-EPOCHS = 6
+# --- escopo auto-ajustado conforme a maquina (ver src/luna16/unet.py) -----
+# Sem GPU: mantem o escopo original, pensado para treinar em minutos numa
+# CPU comum. Com GPU (ex.: Colab), usa mais pacientes/fatias/epocas e uma
+# rede um pouco maior -- ainda leva so alguns minutos, mas produz um modelo
+# mais robusto do que o de contingencia original.
+if DEVICE.type == "cuda":
+    N_TRAIN_PATIENTS = 124        # todos os pacientes de treino disponiveis
+    POS_SLICES_PER_PATIENT = 20
+    NEG_SLICES_PER_PATIENT = 6
+    EPOCHS = 25
+    BASE_CHANNELS = 32
+else:
+    N_TRAIN_PATIENTS = 40         # de 124 disponiveis no split de treino
+    POS_SLICES_PER_PATIENT = 12   # fatias com pulmao na referencia
+    NEG_SLICES_PER_PATIENT = 4    # fatias de fundo (sem pulmao), p/ balancear
+    EPOCHS = 6
+    BASE_CHANNELS = 16
+
 BATCH_SIZE = 16
 LEARNING_RATE = 1e-3
 
@@ -129,14 +142,14 @@ def main():
     rng = np.random.default_rng(SEED)
     rng.shuffle(train_uids)
     train_uids = train_uids[:N_TRAIN_PATIENTS]
-    print(f"Treinando com {len(train_uids)} de {len(split[split.conjunto == 'train'])} pacientes de treino disponiveis (escopo limitado por tempo de CPU -- ver src/luna16/unet.py)", flush=True)
+    print(f"Dispositivo: {DEVICE} -- treinando com {len(train_uids)} de {len(split[split.conjunto == 'train'])} pacientes de treino disponiveis", flush=True)
 
     print("\n=== Montando dataset de fatias 2D ===", flush=True)
     dataset = build_dataset(train_uids)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
     print(f"\nDataset pronto: {len(dataset)} fatias", flush=True)
 
-    model = SmallUNet2D(base_ch=16)
+    model = SmallUNet2D(base_ch=BASE_CHANNELS).to(DEVICE)
     loss_fn = BCEDiceLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
@@ -145,6 +158,7 @@ def main():
     for epoch in range(1, EPOCHS + 1):
         epoch_loss = 0.0
         for x, y in loader:
+            x, y = x.to(DEVICE), y.to(DEVICE)
             optimizer.zero_grad()
             logits = model(x)
             loss = loss_fn(logits, y)
@@ -155,7 +169,7 @@ def main():
         print(f"[epoca {epoch}/{EPOCHS}] loss (BCE+Dice) = {epoch_loss:.4f}", flush=True)
 
     torch.save(
-        {"model_state": model.state_dict(), "base_ch": 16, "train_uids": train_uids},
+        {"model_state": model.state_dict(), "base_ch": BASE_CHANNELS, "train_uids": train_uids},
         CHECKPOINT_PATH,
     )
     print(f"\nCheckpoint salvo em {CHECKPOINT_PATH}", flush=True)

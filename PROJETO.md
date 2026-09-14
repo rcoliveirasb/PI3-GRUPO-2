@@ -315,6 +315,51 @@ executado nesta mesma sessão:
   `sprint8*_resultados.csv`) continuam do split antigo até decisão sobre se
   essa extensão entra no escopo formal (ver item já registrado abaixo).
 
+### 2026-09-14 — Conferência contra os documentos originais do professor (ciclo_1.pdf + Feedback_Grupo_2.pdf)
+
+Amabilly trouxe os dois documentos originais: `ciclo_1 (1).pdf` (a apresentação
+real do fechamento do Ciclo 1) e `Feedback_Grupo_2.pdf` (o feedback pessoal
+completo do professor, com notas individuais e orientações). Pediu para conferir
+se Trello e repositório estão alinhados com o que o professor realmente pediu.
+- **Erro corrigido nesta sessão**: dois cards do Trello (U-Net e a pendência de
+  esclarecimento sobre ela) tinham sido arquivados por engano numa rodada
+  anterior desta mesma sessão, com base só no documento geral do curso (que
+  trata region growing como suficiente para "abordagem avançada"). O
+  `Feedback_Grupo_2.pdf`, específico para este grupo, pede explicitamente U-Net
+  2D (BCE+Dice loss, meta Dice≥0,75) para a etapa de Mineração da Sprint 4 —
+  não é opcional. Cards corrigidos; a API do Trello não permite desarquivar,
+  então precisam ser restaurados manualmente por alguém com acesso ("Enviar
+  para o quadro").
+- **Confirmado, pra evitar confusão**: nenhum dos dois documentos pede detecção
+  de nódulos do Grupo 2. A diferença entre eles é só sobre o método de
+  segmentação (region growing basta vs. precisa também de U-Net treinada), não
+  sobre o escopo (segmentação vs. detecção).
+- **Contradições encontradas nos próprios documentos do repositório e
+  corrigidas**: `DEFINICAO_DO_PROBLEMA.md` afirmava que o projeto não dependia
+  de "treinamento de rede neural do zero" — corrigido para incluir a U-Net como
+  terceira abordagem exigida. `README.md` tratava detecção de nódulos como
+  objetivo central (2) do projeto — corrigido para nota de escopo deixando
+  claro que é extensão fora do formal, consistente com `DEFINICAO_DO_PROBLEMA.md`.
+- **Gaps novos identificados, sem card correspondente até então**: (a) "Resumo
+  expandido para o Congresso de Pesquisa" (outubro, até 4 páginas), pedido no
+  item 5 das orientações do feedback — nunca tinha sido registrado em lugar
+  nenhum; card criado no Trello. (b) decisão explícita pendente sobre migrar de
+  177 para os 888 exames completos do LUNA16 (já baixados por Roger no HD
+  externo, mas não integrados ao pipeline) — já estava documentado com
+  transparência em `docs/criterios_inclusao.md`, mas sem card de decisão;
+  criado agora.
+- **Outro achado**: a correspondência de nomenclatura pedida pelo professor
+  (`src/preprocessing/segmentar_parenquima.py` vs. a estrutura real
+  `src/luna16/`) nunca tinha sido documentada em arquivo visível ao professor —
+  nota adicionada em `docs/criterios_inclusao.md`.
+- **Por quê**: "o professor precisa disso" — checagem de fidelidade entre o que
+  foi prometido/registrado e o que os documentos originais realmente pedem.
+  Achados majoritariamente favoráveis (os 4 pontos de atenção formais do
+  Checkpoint 1 estão bem resolvidos), com as correções pontuais acima.
+- **Pendente**: nada disso foi commitado/enviado ao GitHub ainda (ver pendência
+  de git push já registrada); os 2 cards do Trello arquivados por engano ainda
+  precisam ser restaurados manualmente.
+
 ---
 
 ## Próximos passos / pendências em aberto
@@ -356,9 +401,17 @@ executado nesta mesma sessão:
 - [ ] Avaliar se vale reorganizar os caminhos do código para os nomes que o
   professor sugeriu no feedback (`src/preprocessing/segmentar_parenquima.py`)
   — recomendação: manter a estrutura atual, mais completa
-  (`src/luna16/*.py`), e só deixar a correspondência documentada (já feito em
-  `docs/criterios_inclusao.md`), em vez de renomear um pacote que já funciona
-  e é usado por 6 notebooks e 6 scripts.
+  (`src/luna16/*.py`), e só deixar a correspondência documentada (feito em
+  `docs/criterios_inclusao.md` em 14/09), em vez de renomear um pacote que já
+  funciona e é usado por 6 notebooks e 6 scripts.
+- [ ] **Escrever o resumo expandido para o Congresso de Pesquisa (outubro)** —
+  deliverable do item 5 do feedback, até 4 páginas; ver card novo no Trello.
+- [ ] **Decidir se migra para os 888 exames completos do LUNA16** (hoje só 177
+  estão integrados ao pipeline) ou mantém 177 com a limitação documentada — ver
+  card novo no Trello e `docs/criterios_inclusao.md` seção 3.
+- [ ] **Restaurar manualmente no Trello os 2 cards arquivados por engano**
+  (U-Net e a pendência de esclarecimento sobre ela) — a API não permite
+  desarquivar; texto já corrigido, só falta o "Enviar para o quadro".
 
 ### Do trabalho geral do grupo (ver entradas anteriores do Log)
 

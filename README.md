@@ -14,15 +14,20 @@ qualquer análise de nódulos pulmonares.
 
 ## Objetivos
 
-A partir de imagens de TC do dataset LUNA16: (1) comparar um baseline clássico
-(threshold de Hounsfield Units + morfologia) com uma abordagem mais avançada
-(region growing) para segmentar o parênquima pulmonar, medindo Dice Coefficient
-(meta: ≥ 0,85) e IoU (meta: ≥ 0,75) contra as máscaras de referência oficiais do
-dataset, em pelo menos 20 TCs de teste, com intervalo de confiança de 95% por
-bootstrap; (2) usando o pulmão já segmentado, **detectar nódulos pulmonares** —
-o objetivo final que dá sentido clínico ao projeto (auxiliar o médico a localizar
-pontos suspeitos), avaliado no padrão FROC (sensibilidade x falsos positivos por
-exame) usado pelo próprio desafio LUNA16.
+A partir de imagens de TC do dataset LUNA16: comparar um baseline clássico
+(threshold de Hounsfield Units + morfologia), uma abordagem intermediária
+(region growing) e uma U-Net 2D treinada — esta última exigida no feedback do
+Checkpoint 1 para a etapa de Mineração do KDD — para segmentar o parênquima
+pulmonar, medindo Dice Coefficient (meta: ≥ 0,85 para os métodos clássicos, ≥ 0,75
+para a U-Net) e IoU contra as máscaras de referência oficiais do dataset, em pelo
+menos 20 TCs de teste, com intervalo de confiança de 95% por bootstrap.
+
+> **Nota de escopo**: o pulmão já segmentado poderia, em uma extensão futura, servir
+> de base para detecção de nódulos pulmonares. O grupo implementou uma versão inicial
+> dessa extensão (`sprint7_deteccao_nodulos_grp2.ipynb`), mas ela **não faz parte do
+> escopo formal** desta entrega — tanto o documento oficial do projeto quanto o
+> feedback do Checkpoint 1 pedem apenas a segmentação do parênquima. Ver `PROJETO.md`
+> para o histórico e o status dessa extensão.
 
 ## Dataset
 
@@ -64,9 +69,12 @@ definição formal do problema (pergunta SMART, métricas) está em
    ```
    python scripts/run_sprint4_evaluation.py
    ```
-7. (Opcional) Treinar e avaliar o U-Net 2D de contingência (ver
-   [`src/luna16/unet.py`](src/luna16/unet.py) para o porquê e as limitações
-   deliberadas de escopo — CPU, sem GPU local):
+7. Treinar e avaliar a U-Net 2D (exigida no feedback do Checkpoint 1 para a etapa de
+   Mineração — não é opcional; ver [`src/luna16/unet.py`](src/luna16/unet.py) para o
+   porquê e as limitações de escopo em CPU). **Recomendado**: rodar no Google Colab
+   com GPU em vez de local — o código detecta a GPU sozinho e usa mais dados/épocas
+   automaticamente; ver [`colab_treinar_unet.ipynb`](colab_treinar_unet.ipynb) (basta
+   subir esse notebook no Colab e seguir as células). Rodando local em CPU:
    ```
    pip install torch --index-url https://download.pytorch.org/whl/cpu
    python scripts/train_unet_baseline.py     # ~15-20min
@@ -83,7 +91,7 @@ definição formal do problema (pergunta SMART, métricas) está em
 | [`sprint4_region_growing_grp2.ipynb`](sprint4_region_growing_grp2.ipynb) | Region growing, split estendido (`subset0`+`subset1`), comparação formal baseline vs. region growing em 35 TCs de teste | `subset0`+`subset1` baixados, `run_sprint4_evaluation.py` rodado |
 | [`sprint5_falhas_e_reproducibilidade_grp2.ipynb`](sprint5_falhas_e_reproducibilidade_grp2.ipynb) | Métricas secundárias consolidadas, análise de casos de falha (correlação com resolução espacial), checklist de reprodutibilidade | resultados do Sprint 4 |
 | [`sprint6_resultados_finais_grp2.ipynb`](sprint6_resultados_finais_grp2.ipynb) | Tabela e gráficos finais (IC95%), discussão desempenho x custo computacional | resultados do Sprint 4 |
-| [`sprint7_deteccao_nodulos_grp2.ipynb`](sprint7_deteccao_nodulos_grp2.ipynb) | Detecção de nódulos (o objetivo clínico do projeto): candidatos via blob detection dentro do pulmão segmentado, avaliação estilo FROC, segmentação aproximada (esfera) dos nódulos detectados | `subset0`+`subset1`, `run_nodule_evaluation.py` rodado |
+| [`sprint7_deteccao_nodulos_grp2.ipynb`](sprint7_deteccao_nodulos_grp2.ipynb) | **Extensão opcional, fora do escopo formal** — detecção de nódulos: candidatos via blob detection dentro do pulmão segmentado, avaliação estilo FROC | `subset0`+`subset1`, `run_nodule_evaluation.py` rodado |
 
 Ver também [`RELATORIO_FINAL_RASCUNHO.md`](RELATORIO_FINAL_RASCUNHO.md) — rascunho
 do relatório científico final (contexto, metodologia, resultados, discussão,
