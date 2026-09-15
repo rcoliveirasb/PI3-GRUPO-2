@@ -24,4 +24,7 @@ data/luna16/*
 !data/luna16/sprint8c_resultados_finais.csv
 !data/luna16/sprint_unet_test.csv
 !data/luna16/classificador_fp_reduction.joblib
-!data/luna16/unet_baseline.pt
+
+# Checkpoints de modelos (decisao do Roger, 14/09: nao versionar pesos
+# treinados no Git -- ficam so no Colab/HD externo)
+*.pt
