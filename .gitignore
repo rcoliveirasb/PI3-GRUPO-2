@@ -2,10 +2,26 @@
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
-# Ignora os dados baixados (pesados), mas mantem os manifestos pequenos em
-# data/luna16/_lists/ (so nomes de arquivo, necessarios para
-# scripts/download_luna16_subset.py funcionar num clone novo, ex.: Colab).
+# Ignora os dados baixados (pesados: imagens de TC, ~23GB) e os arquivos
+# grandes do dataset publico (candidates.csv, annotations.csv -- baixaveis via
+# scripts/download_luna16_subset.py). Mantem os manifestos pequenos em
+# data/luna16/_lists/ e os artefatos gerados pelo grupo (splits, resultados,
+# modelo treinado) necessarios para rodar/reproduzir o pipeline sem re-treinar.
 data/*
 !data/luna16/
 data/luna16/*
 !data/luna16/_lists/
+!data/luna16/split_full.csv
+!data/luna16/split_subset0.csv
+!data/luna16/selecao_subset0.csv
+!data/luna16/subset0_headers.csv
+!data/luna16/piloto_resultados_sprint3.csv
+!data/luna16/sprint4_baseline_test.csv
+!data/luna16/sprint4_region_growing_test.csv
+!data/luna16/sprint7_nodulos_resultados.csv
+!data/luna16/sprint8_resultados.csv
+!data/luna16/sprint8b_resultados.csv
+!data/luna16/sprint8c_resultados_finais.csv
+!data/luna16/sprint_unet_test.csv
+!data/luna16/classificador_fp_reduction.joblib
+!data/luna16/unet_baseline.pt
