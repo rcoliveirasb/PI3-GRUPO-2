@@ -360,6 +360,72 @@ se Trello e repositório estão alinhados com o que o professor realmente pediu.
   de git push já registrada); os 2 cards do Trello arquivados por engano ainda
   precisam ser restaurados manualmente.
 
+### 2026-09-14 — U-Net treinada com GPU no Colab: resultado real obtido (Dice 0,9827)
+
+Depois da correção do erro de arquivamento, o código da U-Net (`src/luna16/unet.py`,
+`scripts/train_unet_baseline.py`) foi ajustado para detectar GPU automaticamente e
+escalar o treino (124 pacientes de treino em vez de 40, 25 épocas em vez de 6, rede
+maior) quando disponível — sem quebrar o comportamento original em CPU. Commitado e
+enviado para a branch `sprints-3-8` (não a `main`) junto com duas correções
+subsequentes de throttling no download do LUNA16 (o Kaggle bloqueou por excesso de
+requisições — `429 Too Many Requests` — em três tentativas seguidas; corrigido com
+espera progressiva entre downloads e novas tentativas automáticas).
+- **Notebook criado**: `colab_treinar_unet.ipynb`, com os passos completos (clone,
+  dependências, token do Kaggle via cofre de segredos do Colab — nunca hardcoded no
+  notebook, já que ele vai para o GitHub —, download, split, treino, avaliação).
+- **Diversos obstáculos práticos ao longo do processo** (registrados para quem for
+  repetir): sessão do Colab reseta sozinha após inatividade (perde tudo em `/content`,
+  precisa refazer do zero); rodar o clone mais de uma vez cria pasta aninhada
+  (`projeto/projeto`); o Kaggle limita a taxa de download de arquivos pequenos em
+  sequência; código desatualizado é fácil de usar por engano se não rodar `git pull`
+  antes de cada tentativa (aconteceu 2x nesta sessão).
+- **Resultado real obtido**: Dice médio 0,9827, IoU médio 0,9661 nos 26 pacientes de
+  teste (mesmo split 70/15/15, mesmos pacientes usados no baseline) — muito acima da
+  meta do feedback (Dice≥0,75) e superior tanto ao baseline (0,955 no split novo)
+  quanto ao region growing (0,895, parcial). Arquivo: `sprint_unet_test.csv`.
+- **Achado no processo**: a avaliação do region growing no split novo estava
+  incompleta (21 dos 26 pacientes) — o script é retomável, só falta rodar de novo.
+- **Discussão de viés levantada por Amabilly**: um Dice tão alto poderia indicar
+  vazamento de dados ou overfitting? Verificado: (a) split por paciente com
+  `assert_no_leakage`, confirmado sem sobreposição entre os 26 de teste da U-Net e do
+  baseline; (b) a máscara de referência não é usada como entrada do modelo, só como
+  alvo de comparação; (c) o argumento mais forte — o baseline por threshold, que não
+  aprende nada e não pode "decorar" dados, também tira 0,955 no mesmo conjunto de
+  teste, o que indica que o problema de segmentar pulmão é inerentemente mais fácil
+  (alto contraste HU) do que detectar nódulo, não que a U-Net esteja "trapaceando".
+  Consistente com a literatura publicada sobre segmentação de pulmão no LUNA16
+  (tipicamente Dice 0,97-0,98). Ressalvas reais para o relatório: conjunto de teste
+  pequeno (n=26, o IC95% vai mostrar a estabilidade) e a própria máscara de
+  referência do LUNA16 foi gerada por um algoritmo automático, não por radiologista
+  à mão — bater com ela não é o mesmo que bater com a anatomia real.
+- **Pendências novas criadas no Trello**: trazer `unet_baseline.pt` e
+  `sprint_unet_test.csv` do Colab para o repositório local (ainda só existem na
+  sessão do Colab); calcular IC95% bootstrap dos 3 métodos no split novo; inspecionar
+  visualmente ≥10 exames aleatórios (pedido explícito do feedback, ainda não
+  confirmado); reforçada a pendência de decidir 177 vs. 888 pacientes, já que a
+  U-Net também treinou só na fração de 177.
+- **Por quê**: resolver de vez a exigência de U-Net do feedback do Checkpoint 1, com
+  um resultado real e defensável em vez de apenas uma implementação de contingência.
+- **Pendente**: os dois arquivos da U-Net trazidos do Colab, o IC95% dos 3 métodos, a
+  inspeção visual, e a decisão final sobre o tamanho do dataset.
+
+### 2026-09-14 — Decisão fechada: U-Net satisfaz a exigência de "Mineração"; divisão de tarefas no Trello cobre tudo que faltava
+
+Amabilly confirmou, contra o próprio documento do feedback do professor: o resultado real
+da U-Net (Dice 0,9827, IoU 0,9661) **satisfaz** a exigência de um modelo treinado pra etapa
+de "Mineração de Dados" — não é uma pergunta em aberto, é o que o professor pediu e o
+documento respalda. **Decisão encerrada, sem necessidade de confirmação adicional com o
+professor.**
+
+Também organizado no Trello, nesta sessão, o board inteiro em torno da divisão de tarefas
+entre os 6 integrantes (Roger, Amabilly, Rafael, Érica, Ruan, Herb) cobrindo as pendências
+técnicas (incluindo o novo front-end do projeto: API do Rafael + interface do Ruan + exames
+de demonstração do Herb) e as pendências de redação/validação (resumo expandido da Érica,
+inspeção visual do Ruan, IC95%/region growing da Amabilly). Cards antigos e avulsos de
+pendência foram arquivados deliberadamente pelo grupo por já estarem cobertos por essa
+divisão — não é um erro a corrigir, é a decisão de consolidar tudo num único conjunto de
+cards por pessoa. **Não há mais pendências "soltas" fora dessa divisão.**
+
 ---
 
 ## Próximos passos / pendências em aberto
@@ -375,19 +441,17 @@ se Trello e repositório estão alinhados com o que o professor realmente pediu.
   888 pacientes completos (HD externo do Roger) fica como melhoria futura, não
   bloqueante.
 - [ ] **Conferir os resultados finais de baseline/region growing/U-Net sobre o
-  split novo** (rodando em background no momento do commit de 2026-09-14) e
-  atualizar `tabela_resultados_finais.csv`, os gráficos e
+  split novo** e atualizar `tabela_resultados_finais.csv`, os gráficos e
   `RELATORIO_FINAL_RASCUNHO.md` com os números definitivos — os que estão lá
   hoje são do split antigo (60/20/20), arquivado em
-  `data/luna16/archive_split_v1_60_20_20/`.
-- [x] **U-Net 2D de contingência implementado e treinamento iniciado** (ver
+  `data/luna16/archive_split_v1_60_20_20/`. **Atribuído à Amabilly no Trello**
+  (cards "Terminar avaliação do region growing" e "Calcular o IC95%").
+- [x] **U-Net 2D implementada, treinada com GPU e avaliada** (ver
   `src/luna16/unet.py`, `scripts/train_unet_baseline.py`,
-  `scripts/run_unet_evaluation.py`) — escopo inicial deliberadamente limitado
-  (CPU, 40 pacientes, 128×128, 6 épocas). Falta: (a) conferir o Dice/IoU
-  final assim que a avaliação terminar; (b) **esclarecer com o professor se
-  isso satisfaz a exigência da etapa "Mineração"** ou se ele espera algo mais
-  robusto (mais dados/épocas/resolução) antes de investir mais tempo de CPU
-  nisso.
+  `scripts/run_unet_evaluation.py`) — resultado real: Dice 0,9827, IoU 0,9661
+  em 26 pacientes de teste (ver log de 14/09). **Confirmado que satisfaz a
+  exigência da etapa "Mineração" do feedback do professor — decisão fechada,
+  sem necessidade de confirmação adicional.**
 - [ ] **Reprocessar a detecção de nódulos (Sprints 7-8) com o split novo**,
   se essa extensão for confirmada como parte do escopo da entrega (ver item
   abaixo) — hoje ainda reflete o split 60/20/20 antigo.
@@ -405,13 +469,24 @@ se Trello e repositório estão alinhados com o que o professor realmente pediu.
   `docs/criterios_inclusao.md` em 14/09), em vez de renomear um pacote que já
   funciona e é usado por 6 notebooks e 6 scripts.
 - [ ] **Escrever o resumo expandido para o Congresso de Pesquisa (outubro)** —
-  deliverable do item 5 do feedback, até 4 páginas; ver card novo no Trello.
-- [ ] **Decidir se migra para os 888 exames completos do LUNA16** (hoje só 177
-  estão integrados ao pipeline) ou mantém 177 com a limitação documentada — ver
-  card novo no Trello e `docs/criterios_inclusao.md` seção 3.
-- [ ] **Restaurar manualmente no Trello os 2 cards arquivados por engano**
-  (U-Net e a pendência de esclarecimento sobre ela) — a API não permite
-  desarquivar; texto já corrigido, só falta o "Enviar para o quadro".
+  deliverable do item 5 do feedback, até 4 páginas. **Atribuído à Érica no
+  Trello.**
+- [x] **Decidido: migrar para os 888 exames completos do LUNA16** (hoje só 177
+  estão integrados ao pipeline) — não é mais uma decisão em aberto, é execução.
+  **Atribuído ao Roger no Trello** (card "Usar todos os dados do dataset (888
+  exames) e treinar com eles"). Ver `docs/criterios_inclusao.md` seção 3.
+
+### Novo: front-end de demonstração do projeto (adicionado em 2026-09-14)
+
+Escopo novo, fora do plano formal original do Grupo 2 — decisão do grupo de
+construir uma interface visual pra demonstrar o pipeline, dividida em 3 partes
+no Trello:
+- [ ] **API que serve os 3 modelos treinados** (baseline, region growing,
+  U-Net) — **Rafael**.
+- [ ] **Interface web** (seleção de exame, máscara sobreposta, comparação
+  lado a lado dos 3 métodos) consumindo essa API — **Ruan**.
+- [ ] **Escolha dos exames de demonstração** (casos representativos + pelo
+  menos 1 caso de falha) — **Herb**.
 
 ### Do trabalho geral do grupo (ver entradas anteriores do Log)
 
@@ -430,7 +505,8 @@ se Trello e repositório estão alinhados com o que o professor realmente pediu.
 - **Atualizar `RELATORIO_ETL.md`**: a seção 3.2 diz que o classificador não é
   persistido em disco, mas isso já não é verdade desde 2026-09-02
   (`classificador_fp_reduction.joblib` existe) — e falta documentar
-  `sprint8c_resultados_finais.csv` na tabela de artefatos.
+  `sprint8c_resultados_finais.csv` na tabela de artefatos. **Atribuído ao
+  Rafael no Trello.**
 - **Confirmar volume de dados anotados usado na avaliação FROC** (20 pacientes)
   é suficiente/representativo, ou se vale ampliar antes da entrega final.
 - **Decidir se o `.tcia`/notebook de EDA do LIDC-IDRI (Sprint 2) permanece só
