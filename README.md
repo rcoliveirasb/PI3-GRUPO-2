@@ -113,3 +113,7 @@ comentadas inline).
 - [`scripts/run_sprint4_evaluation.py`](scripts/run_sprint4_evaluation.py): roda baseline e region growing em todo o conjunto de teste (retomÃ¡vel â€” salva progresso por paciente, seguro de interromper e retomar).
 - [`scripts/train_unet_baseline.py`](scripts/train_unet_baseline.py) / [`scripts/run_unet_evaluation.py`](scripts/run_unet_evaluation.py): treina e avalia o U-Net 2D de contingÃªncia (ver `src/luna16/unet.py`).
 - [`scripts/run_nodule_evaluation.py`](scripts/run_nodule_evaluation.py): roda a detecÃ§Ã£o de nÃ³dulos em atÃ© 20 pacientes com anotaÃ§Ã£o disponÃ­vel (retomÃ¡vel).
+
+## Estratégia de revisão e integração
+
+A branch sprints-3-8 será revisada pelo grupo por meio de um Pull Request antes do merge para main. Essa abordagem permite revisar os commits, alterações de código e documentação das Sprints 3–8 antes de incorporá-las à branch principal.
