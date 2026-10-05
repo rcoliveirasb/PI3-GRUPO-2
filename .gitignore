@@ -23,6 +23,10 @@ data/luna16/*
 !data/luna16/sprint8b_resultados.csv
 !data/luna16/sprint8c_resultados_finais.csv
 !data/luna16/sprint_unet_test.csv
+!data/luna16/tabela_resultados_finais.csv
+!data/luna16/comparacao_pareada_final.csv
+!data/luna16/grafico_dice_iou_final.png
+!data/luna16/grafico_comparacao_pareada.png
 !data/luna16/classificador_fp_reduction.joblib
 
 # Checkpoints de modelos (decisao do Roger, 14/09: nao versionar pesos

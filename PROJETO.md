@@ -426,9 +426,84 @@ pendência foram arquivados deliberadamente pelo grupo por já estarem cobertos 
 divisão — não é um erro a corrigir, é a decisão de consolidar tudo num único conjunto de
 cards por pessoa. **Não há mais pendências "soltas" fora dessa divisão.**
 
+### 2026-10-05 — Feedback da Sprint 3 recebido e conferido contra a pré-banca e o repositório
+
+Amabilly trouxe `Feedback SP3 - Grupo 2.pdf` (nota do grupo **8,8**) e os slides apresentados na
+pré-banca (`dataset usado.pdf`). O resumo expandido já foi enviado ao Congresso.
+- **Diagnóstico do professor**: resultado técnico forte (9,5; grupo mais avançado da
+  turma na Mineração), mas comunicação e evidência fracas (7,8 cada): título
+  "Sprint 1/3", tarefas de agosto repetidas, campos de evidência em branco, duas
+  bases em slides diferentes, números sem interpretação.
+- **Três perguntas a responder antes da banca**: (1) a diferença baseline vs. U-Net é
+  real ou ruído (margem de erro + teste estatístico); (2) qual é a base oficial, em
+  um documento só, com número exato de exames; (3) de onde vem a máscara de
+  referência — se é de algoritmo, declarar como limitação.
+- **Achado ao conferir os números**: o professor compara 0,962 (baseline) com 0,9827
+  (U-Net), mas 0,962 é do split antigo (60/20/20, 35 exames) e 0,9827 é do split
+  novo (70/15/15, 26 exames). No mesmo conjunto de 26 exames os números atuais são:
+  baseline 0,956 (mínimo 0,847, 1 exame abaixo de 0,85), region growing 0,907
+  (mínimo 0,226, 3 exames abaixo de 0,85), U-Net 0,983. Os slides da pré-banca ainda
+  mostram os números antigos (35 exames, 0,962/0,953, "100% acima da meta"), o que
+  não vale mais no split novo.
+- **Estado dos artefatos**: a avaliação do region growing no split novo está completa
+  localmente (26/26), ainda não commitada. `sprint_unet_test.csv` estava só no
+  GitHub (commit `ac855dc` do Roger, 19/09, na raiz do repositório); trazido por
+  fast-forward e movido para `data/luna16/`, que é onde o código e o `.gitignore`
+  esperam.
+- **Resultados definitivos gerados** (`scripts/run_final_results.py`, novo): média +
+  IC95% por bootstrap (10.000 reamostras) nos mesmos 26 exames —
+  baseline Dice 0,9555 [0,9416; 0,9663], region growing 0,9065 [0,8365; 0,9550],
+  U-Net 0,9781 [0,9727; 0,9824]. Saídas em `data/luna16/`:
+  `tabela_resultados_finais.csv`, `comparacao_pareada_final.csv`,
+  `grafico_dice_iou_final.png`, `grafico_comparacao_pareada.png` (agora liberados no
+  `.gitignore`; antes não eram versionados).
+- **Teste estatístico (Wilcoxon pareado, correção de Holm)**: U-Net − baseline =
+  +0,0226 de Dice (IC95% [0,0118; 0,0354], p < 0,001, U-Net melhor em 23 de 26
+  exames); region growing − baseline = −0,0490 (p < 0,001). A diferença entre U-Net
+  e baseline é real, não ruído. O ganho se concentra nos casos difíceis: +0,094 nos 3
+  piores exames do baseline contra +0,013 nos outros 23.
+- **Divergência a esclarecer**: o Dice da U-Net divulgado até aqui (0,9827, IoU
+  0,9661 — no feedback, no resumo expandido e na mensagem do commit `ac855dc`) não
+  bate com o CSV versionado, cuja média por exame é 0,9781 (IoU 0,9574; mediana
+  0,9823). O número auditável é 0,9781. Confirmar com o Roger se o CSV é da mesma
+  execução do 0,9827.
+- **Ambiente**: o `.venv` local está quebrado (aponta para um Python da Microsoft
+  Store que não existe mais e para o caminho antigo do projeto na Área de Trabalho).
+  O script foi rodado com o Python do sistema usando os pacotes do `.venv`.
+- **Documentos em conflito**: este arquivo registra a migração para 888 exames como
+  decidida (Roger); `docs/criterios_inclusao.md` ainda a traz como pendente. O
+  histograma de HU dos slides é de outra base (TCIA), o que alimenta a dúvida do
+  professor sobre a base oficial.
+- **Por quê**: alinhar o que falta ao que o professor cobra para a Sprint 4 e a banca.
+- **Pendente**: divisão das tarefas entre os integrantes e atualização do Trello —
+  ver "Do feedback da Sprint 3" em Próximos passos.
+
 ---
 
 ## Próximos passos / pendências em aberto
+
+### Do feedback da Sprint 3 (prioridade alta — adicionado em 2026-10-05)
+
+- [ ] **Contrato de formatos** entre modelo, API e tela, por escrito, para cada frente
+  trabalhar com dados de mentira sem esperar a outra.
+- [ ] **Base e gabarito em um documento só**: número exato de exames, critério de
+  escolha, e `seg-lungs-LUNA16` (gerada por algoritmo) como limitação declarada.
+  Resolver o conflito 177 vs. 888 entre este arquivo e `docs/criterios_inclusao.md`.
+- [x] **Três métodos no mesmo conjunto de teste**, com IC95% e teste estatístico
+  pareado — feito em 2026-10-05 (`scripts/run_final_results.py`). Falta commitar e
+  levar os números novos para os slides e para o `RELATORIO_FINAL_RASCUNHO.md`.
+- [ ] **Esclarecer a divergência do Dice da U-Net** (0,9827 divulgado vs. 0,9781 no
+  CSV versionado) com o Roger.
+- [ ] **Análise dos piores casos**: abrir as imagens onde cada método erra (o exame
+  com Dice 0,226 no region growing e o de 0,847 no baseline são os primeiros).
+- [ ] **Comparar os números com a literatura** e responder por escrito qual é a
+  contribuição do trabalho se o método simples já resolve quase tudo.
+- [ ] **Interface e API com dados de mentira**, com responsável nomeado para tela,
+  API e servir os modelos.
+- [ ] **Slides da banca** no formato "o que avancei, a prova, o que me impediu", com
+  os números do split novo e sem campos de evidência em branco.
+- [ ] **Esclarecer ao professor quem fez a divisão dos dados** (aparece no nome do
+  Rafael; Amabilly relata ter refeito).
 
 ### Do feedback oficial do professor (prioridade alta — ver "Contexto acadêmico")
 
