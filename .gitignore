@@ -28,6 +28,11 @@ data/luna16/*
 !data/luna16/comparacao_pareada_final.csv
 !data/luna16/grafico_dice_iou_final.png
 !data/luna16/grafico_comparacao_pareada.png
+!data/luna16/nodulos_parede_test.csv
+!data/luna16/nodulos_parede_resumo.csv
+!data/luna16/split_novo.csv
+!data/luna16/*_novo.csv
+!data/luna16/*_novo.png
 !data/luna16/classificador_fp_reduction.joblib
 !data/luna16/nodulos_apagados_teste.csv
 !data/luna16/nodulos_apagados_resumo.csv

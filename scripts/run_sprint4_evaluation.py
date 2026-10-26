@@ -6,13 +6,20 @@ salvo, pula ele; da pra interromper e rodar de novo sem perder progresso).
 
 Uso: python scripts/run_sprint4_evaluation.py
 
-Le data/luna16/split_subset0.csv (split do Sprint 3, imutavel) e estende com
+Split novo (888 exames, orientacao 1 do feedback da Sprint 4), sem mexer nos
+resultados dos 26 exames:
+  python scripts/run_sprint4_evaluation.py --split data/luna16/split_novo.csv --sufixo _novo
+Le o split indicado (colunas uid, conjunto) e salva
+sprint4_baseline_test_novo.csv / sprint4_region_growing_test_novo.csv.
+
+Sem --split: le data/luna16/split_subset0.csv (split do Sprint 3, imutavel) e estende com
 os pacientes novos do subset1 (mesma seed/proporcoes), salvando
 data/luna16/split_full.csv. Depois avalia baseline e region growing em todo
 o conjunto de teste resultante, salvando:
   data/luna16/sprint4_baseline_test.csv
   data/luna16/sprint4_region_growing_test.csv
 """
+import argparse
 import sys
 from pathlib import Path
 
@@ -96,15 +103,23 @@ def evaluate_resumable(uids, segment_fn, out_path: Path, label: str) -> pd.DataF
 
 
 def main():
-    full_split = build_or_load_full_split()
-    test_uids = full_split.loc[full_split["conjunto"] == "test", "uid"].tolist()
-    print(f"\nConjunto de teste: {len(test_uids)} pacientes\n", flush=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--split", type=Path, help="CSV de split (uid, conjunto); padrao: split_full.csv")
+    parser.add_argument("--conjunto", default="test", help="valor da coluna 'conjunto' a avaliar")
+    parser.add_argument("--sufixo", default="", help="sufixo dos CSVs de saida, ex: _novo")
+    args = parser.parse_args()
+
+    full_split = pd.read_csv(args.split) if args.split else build_or_load_full_split()
+    test_uids = full_split.loc[full_split["conjunto"] == args.conjunto, "uid"].tolist()
+    print(f"\nConjunto '{args.conjunto}': {len(test_uids)} pacientes\n", flush=True)
 
     print("=== Baseline (threshold -600HU + morfologia) ===", flush=True)
-    evaluate_resumable(test_uids, segment_baseline, DATA_DIR / "sprint4_baseline_test.csv", "baseline")
+    evaluate_resumable(test_uids, segment_baseline, DATA_DIR / f"sprint4_baseline_test{args.sufixo}.csv", "baseline")
 
     print("\n=== Region growing ===", flush=True)
-    evaluate_resumable(test_uids, segment_region_growing, DATA_DIR / "sprint4_region_growing_test.csv", "region_growing")
+    evaluate_resumable(
+        test_uids, segment_region_growing, DATA_DIR / f"sprint4_region_growing_test{args.sufixo}.csv", "region_growing"
+    )
 
     print("\nCONCLUIDO", flush=True)
 
