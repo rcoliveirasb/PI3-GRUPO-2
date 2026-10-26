@@ -53,7 +53,8 @@ A contagem completa está em [`base_oficial.md`](base_oficial.md), seção 3. Em
 - Implementado em `src/luna16/splits.py` (`patient_split`, `train_frac=0.7,
   val_frac=0.15`), com checagem de vazamento em `assert_no_leakage`.
 - **Fase 1:** 124 / 27 / 26 (`data/luna16/split_full.csv`, regenerado em 2026-09-14).
-- **Fase 2:** 479 / 100 / 99, sobre os 678 exames utilizáveis.
+- **Fase 2:** sorteio 497 / 106 / 107 sobre os 710 exames inéditos; depois do filtro de
+  espaçamento, ficam 479 / 100 / 99 (678 exames).
 - **Histórico:** entre as Sprints 3 e 8 o grupo usou 60/20/20 (35 exames de teste). Os
   resultados desse período estão em `data/luna16/archive_split_v1_60_20_20/`.
 

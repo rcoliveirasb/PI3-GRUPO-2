@@ -53,13 +53,14 @@ Os parâmetros do pré-processamento e dos métodos estão em
 | − exames da fase 1, em quarentena (nunca entram no treino novo) | −177 |
 | − exame com geometria divergente entre imagem e máscara | −1 |
 | **Exames inéditos** | **710** |
-| − espaçamento entre cortes acima de 2,5 mm | −32 |
-| **Exames utilizáveis** | **678** |
-| Divisão por paciente, semente 42 | **479 treino / 100 validação / 99 teste** |
+| Sorteio por paciente, 70/15/15, semente 42 | 497 treino / 106 validação / 107 teste |
+| − espaçamento entre cortes acima de 2,5 mm, em cada conjunto | −18 / −6 / −8 (−32) |
+| **Exames usados** | **479 treino / 100 validação / 99 teste (678)** |
 
-- **De onde vem o 479:** a divisão foi feita sobre os **678** que sobraram depois do filtro,
-  e não sobre os 710. 479/100/99 dá 70,6%/14,7%/14,6% de 678. *(Confirmar com o Roger; o
-  feedback da Sprint 4 perguntou por que não 497.)*
+- **De onde vem o 479:** o sorteio 70/15/15 foi feito sobre os **710** exames inéditos
+  (70% de 710 ≈ 497, como o professor calculou). Depois disso, o filtro de espaçamento
+  removeu 18 exames do treino, 6 da validação e 8 do teste. Fonte: relatório de migração
+  do Roger, apresentado na Sprint 4.
 - **Teste B:** os 99 exames de teste. A partir da orientação 1 do feedback, **é o conjunto
   oficial de comparação dos três métodos.** Os 26 exames do Teste A viram histórico.
 
@@ -72,8 +73,9 @@ Os parâmetros do pré-processamento e dos métodos estão em
 | 178 | Quarentena da fase 2: os 177 da fase 1 + 1 exame com geometria divergente |
 | 710 | Exames inéditos para a fase 2 |
 | 32 | Excluídos na fase 2 por espaçamento acima de 2,5 mm |
-| 678 | Utilizáveis na fase 2 |
-| 479 / 100 / 99 | Treino / validação / teste da fase 2 (Teste B = 99) |
+| 497 / 106 / 107 | Sorteio da fase 2 sobre os 710, antes do filtro de espaçamento |
+| 678 | Utilizáveis na fase 2, depois do filtro |
+| 479 / 100 / 99 | Treino / validação / teste da fase 2, depois do filtro (Teste B = 99) |
 | 124 / 27 / 26 | Treino / validação / teste da fase 1 (Teste A = 26) |
 | 35 | Teste do split antigo 60/20/20, histórico (é o número que aparece na pré-banca) |
 | 20 | Exames usados na avaliação de detecção de nódulos (extensão fora do escopo formal) |
