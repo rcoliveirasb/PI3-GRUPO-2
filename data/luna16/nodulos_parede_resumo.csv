@@ -1,0 +1,13 @@
+mascara,grupo,n_nodulos,preservados (>=50% dentro),perdidos (<50% dentro),cobertura media
+referencia,todos,43,42,1,0.979
+referencia,na borda,9,8,1,0.9
+referencia,interior,34,34,0,1.0
+baseline,todos,43,30,13,0.705
+baseline,na borda,9,1,8,0.211
+baseline,interior,34,29,5,0.836
+region_growing,todos,43,28,15,0.665
+region_growing,na borda,9,1,8,0.171
+region_growing,interior,34,27,7,0.795
+unet,todos,43,40,3,0.9
+unet,na borda,9,7,2,0.626
+unet,interior,34,33,1,0.972
