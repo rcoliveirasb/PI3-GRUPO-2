@@ -22,6 +22,7 @@ data/luna16/*
 !data/luna16/sprint8_resultados.csv
 !data/luna16/sprint8b_resultados.csv
 !data/luna16/sprint8c_resultados_finais.csv
+!data/luna16/comparacao_correcoes.csv
 !data/luna16/sprint_unet_test.csv
 !data/luna16/tabela_resultados_finais.csv
 !data/luna16/comparacao_pareada_final.csv
