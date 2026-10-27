@@ -329,19 +329,67 @@ explícita**, que a U-Net simplesmente não tinha.
 > dados. Quando o conhecimento é espacial e não aparece na aparência local, a rede não
 > aprende — e o jeito de consertar não é treinar mais, é **devolver a restrição**.
 
-**A correção:** aplicar à saída da U-Net a mesma `keep_largest_components` que os outros
-dois métodos já usavam. Reaproveitamento, não código novo.
+**A correção, primeira tentativa:** aplicar à saída da U-Net a mesma
+`keep_largest_components` que os outros dois métodos já usavam — manter os 2 maiores
+componentes. **Resultado: Dice 0,9281 → 0,9679, falso positivo 672,5 → 239,4 mL.**
 
-**Resultado: Dice 0,9281 → 0,9679. Falso positivo 672,5 → 239,4 mL.**
+Melhorou bastante. Mas não estava certo — e a história de como isso apareceu é a parte
+mais útil desta sprint.
 
-**O detalhe que valida a correção:** a **sensibilidade não mudou** (0,9829 nos dois). A
-limpeza tirou 433 mL de falso positivo sem descartar **um voxel sequer** de pulmão
-verdadeiro. Se a sensibilidade tivesse caído, seria sinal de que a regra estava comendo
-pulmão junto — e aí seria uma correção ruim.
+### O bug dentro da própria correção
+
+Ao montar a figura antes/depois, o painel "DEPOIS" **ainda mostrava ar da mesa marcado em
+vermelho**. O número tinha melhorado muito (de 672 para 239 mL), então era fácil dar por
+encerrado. A imagem não deixou.
+
+Investigando os componentes da predição após a limpeza:
+
+```
+1.  4.939,5 mL   99% dentro da referência   <- OS DOIS PULMÕES, num componente só
+2.    189,5 mL    0% dentro da referência   <- ar da mesa
+3.    179,2 mL    0% dentro da referência   <- ar da mesa
+4.    167,1 mL    0% dentro da referência   <- ar da mesa
+```
+
+**O problema:** na saída da U-Net os dois pulmões saem **conectados** num único componente,
+pela região da carina. Como a regra reservava **duas vagas fixas**, a primeira ia para esse
+componente único e a **segunda sobrava para o maior blob de lixo**. A regra não só deixava
+passar ar da mesa — ela *garantia* que um pedaço fosse mantido.
+
+**A correção da correção:** trocar "os 2 maiores" por **"os de tamanho comparável ao
+maior"** — pelo menos 15% do volume do maior componente.
+
+O critério se apoia em anatomia, e é por isso que ele é robusto: **dois pulmões têm
+tamanhos parecidos entre si; um blob espúrio é uma ordem de grandeza menor.** Aqui os
+blobs de mesa ficam em 3,8% do maior e caem fora. Se os pulmões viessem separados (digamos
+2.500 e 2.400 mL), o segundo ficaria em 96% do primeiro e seria mantido.
+
+Criei uma função nova (`keep_components_by_fraction`) em vez de alterar a existente,
+porque o baseline e o region growing usam a antiga e **estão corretos** — não há motivo
+para mexer no caminho deles.
+
+### As três versões lado a lado
+
+| | Dice | Precisão | Sensibilidade | Falso positivo |
+|---|---|---|---|---|
+| Sem limpeza | 0,9281 | 0,8791 | 0,9829 | 672,5 mL |
+| "2 maiores" | 0,9679 | 0,9533 | 0,9829 | 239,4 mL |
+| **Comparável ao maior** | **0,9864** | **0,9899** | 0,9829 | **50,0 mL** |
+
+**Repare na coluna da sensibilidade: 0,9829 nas três.** A limpeza nunca encosta em pulmão
+real — ela só muda *o quanto de lixo* remove. Isso é o que valida a correção.
 
 > **Guarde esse raciocínio.** Quando você aplica um filtro que remove coisas, sempre
 > verifique a sensibilidade. Se ela cai, o filtro está removendo demais. É a checagem que
 > separa uma correção de um band-aid.
+
+E com isso **aquele exame deixou de ser o único em que a U-Net perdia** — ela passa a ficar
+acima do baseline (0,9732) nele.
+
+> **A lição de método, que vale mais que a correção em si:** o número da primeira versão
+> tinha melhorado 64% e eu poderia ter parado ali. Foi **olhar a imagem** que mostrou que
+> ainda havia lixo. É exatamente o que a orientação 5 do professor pedia — olhar onde erra,
+> não só o quanto acerta — aplicado ao nosso próprio trabalho.
 
 ### O que as correções deram nos 26 exames
 
@@ -350,12 +398,12 @@ mesmo pré-processamento** — assim a diferença é atribuível só à correç�
 
 | | Region growing | U-Net |
 |---|---|---|
-| Dice médio | 0,9065 → **0,9355** | 0,9781 → **0,9804** |
+| Dice médio | 0,9065 → **0,9355** | 0,9781 → **0,9818** |
 | Dice mínimo | 0,2263 → **0,5941** | 0,9281 → **0,9628** |
-| Melhoraram | 2 | 7 |
+| Melhoraram | 2 | 13 |
 | Pioraram | **0** | 1 (−0,0003) |
-| Ficaram iguais | 24 | 18 |
-| Falso positivo médio | 71,2 → 70,4 mL | 88,1 → **66,8 mL** |
+| Ficaram iguais | 24 | 12 |
+| Falso positivo médio | 71,2 → 70,4 mL | 88,1 → **51,1 mL** |
 | Sensibilidade média | 0,8666 → **0,8986** | 0,9742 → **0,9742** |
 
 **O que ler nesses números — e é aqui que está a parte interessante:**
@@ -365,14 +413,22 @@ growing. Isso é o comportamento certo de uma correção de bug: ela conserta o 
 perturbar o que já funcionava. Se metade dos exames tivesse mudado, seria sinal de que eu
 mexi no comportamento geral do método, não num caso patológico.
 
-**2. A U-Net removeu 553 mL de falso positivo nos 26 exames com sensibilidade média
+**2. A U-Net removeu 963 mL de falso positivo nos 26 exames com sensibilidade média
 idêntica** (0,9742 nos dois, até a quarta casa). Isso é a prova de que o filtro só tirou
 o que não era pulmão. Se tivesse comido pulmão junto, a sensibilidade teria caído.
 
-**3. O ganho médio parece pequeno, e isso é esperado.** +0,0022 na U-Net soa irrelevante —
-mas o **mínimo** subiu de 0,9281 para 0,9628. É exatamente o mesmo padrão do achado
-principal da Sprint 4: a média esconde, a cauda é onde está o efeito. Aqui a gente caiu na
-mesma armadilha que documentou, só que do lado de quem corrige.
+**3. O ganho médio parece pequeno, e isso é esperado.** +0,0037 na U-Net soa irrelevante —
+mas **13 dos 26 exames melhoraram** e o falso positivo médio caiu 42%. É exatamente o
+mesmo padrão do achado principal da Sprint 4: a média esconde, a cauda é onde está o
+efeito. Aqui a gente caiu na mesma armadilha que documentou, só que do lado de quem
+corrige.
+
+Um detalhe que confunde à primeira vista: **o Dice mínimo da U-Net continua 0,9628 nos
+dois lados.** Não é que a correção não tenha ajudado o pior caso — é que **o pior caso
+passou a ser outro**. O exame que era o pior (`…696274044574`, com o ar da mesa) subiu para
+0,9864, e a posição de "pior" foi herdada pelo de fatia de 2,5 mm (`…021509831276`), que
+não tinha ar de mesa e portanto não foi afetado pela correção. Quando um mínimo não se
+move, vale sempre checar se é o mesmo item ocupando a posição.
 
 **4. O que a correção NÃO resolveu, e é importante dizer.** O region growing continua com
 dois exames abaixo de 0,85:
