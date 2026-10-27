@@ -152,7 +152,7 @@ def segment_with_unet(
     volume_hu: np.ndarray,
     model: SmallUNet2D,
     limpar_fora_do_torax: bool = True,
-    n_components: int = 2,
+    frac_min: float = 0.15,
 ) -> np.ndarray:
     """Segmenta um volume 3D (ja limpo/reamostrado, mesma entrada esperada
     por segment_baseline/segment_region_growing) fatia a fatia com o U-Net.
@@ -162,12 +162,18 @@ def segment_with_unet(
     tamanho original da fatia antes de empilhar -- assim a mascara final tem
     a mesma resolucao do volume de entrada, igual aos outros metodos.
 
-    `limpar_fora_do_torax` aplica a MESMA limpeza espacial que o baseline e o
-    region growing ja faziam (`lung_air.keep_largest_components`: descarta o
-    que toca a borda da imagem fatia a fatia e mantem so os maiores componentes
-    3D). A rede, sozinha, nao tem nenhuma nocao de "isto esta fora do corpo" --
-    ela decide por aparencia local, e o ar do colchao/mesa do tomografo se
-    parece com pulmao: escuro, cercado de material mais claro.
+    `limpar_fora_do_torax` aplica a limpeza espacial que o baseline e o region
+    growing ja faziam: descarta o que toca a borda da imagem fatia a fatia e
+    mantem so os componentes 3D de tamanho comparavel ao maior
+    (`lung_air.keep_components_by_fraction`). A rede, sozinha, nao tem nenhuma
+    nocao de "isto esta fora do corpo" -- ela decide por aparencia local, e o ar
+    do colchao/mesa do tomografo se parece com pulmao: escuro, cercado de
+    material mais claro.
+
+    Usa o criterio RELATIVO e nao "os 2 maiores" porque na saida da rede os dois
+    pulmoes costumam vir grudados num componente so (pela regiao da carina);
+    com duas vagas fixas, a segunda sobrava para o maior blob de mesa. Ver
+    `keep_components_by_fraction` para o caso concreto.
 
     Achado real (analise dos piores casos, Sprint 4): no exame ...696274044574
     a U-Net marcou 672,5 mL de ar da mesa do tomografo como pulmao -- dez vezes
@@ -178,7 +184,7 @@ def segment_with_unet(
     """
     from skimage.transform import resize
 
-    from .lung_air import keep_largest_components
+    from .lung_air import keep_components_by_fraction
 
     z, h, w = volume_hu.shape
     mask = np.zeros((z, h, w), dtype=bool)
@@ -195,7 +201,7 @@ def segment_with_unet(
             mask[i] = probs_full > 0.5
 
     if limpar_fora_do_torax and mask.any():
-        limpa = keep_largest_components(mask, n_keep=n_components)
+        limpa = keep_components_by_fraction(mask, frac_min=frac_min)
         # salvaguarda: se a limpeza zerar a predicao (caso degenerado em que
         # tudo encostava na borda), devolve a mascara crua em vez de nada
         if limpa.any():
