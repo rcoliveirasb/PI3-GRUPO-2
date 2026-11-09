@@ -29,6 +29,9 @@ data/luna16/*
 !data/luna16/grafico_dice_iou_final.png
 !data/luna16/grafico_comparacao_pareada.png
 !data/luna16/classificador_fp_reduction.joblib
+!data/luna16/nodulos_apagados_teste.csv
+!data/luna16/nodulos_apagados_resumo.csv
+!data/luna16/archive_pre_correcoes_2026-10-26/
 
 # Checkpoints de modelos (decisao do Roger, 14/09: nao versionar pesos
 # treinados no Git -- ficam so no Colab/HD externo)

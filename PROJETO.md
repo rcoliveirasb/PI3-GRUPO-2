@@ -478,9 +478,56 @@ pré-banca (`dataset usado.pdf`). O resumo expandido já foi enviado ao Congress
 - **Pendente**: divisão das tarefas entre os integrantes e atualização do Trello —
   ver "Do feedback da Sprint 3" em Próximos passos.
 
+### 2026-11-09 — Sincronização, resultados finais pós-correções e análise de nódulos versionada
+
+- **Repositório local estava 10 commits atrás** do `origin/sprints-3-8` (U-Net com GPU,
+  correções do Ruan de 26/10, inspeção visual, scripts do treino com 888 exames do
+  Roger). Trazido por fast-forward. As alterações locais (CSV idêntico ao do upstream e
+  reformatação do `colab_treinar_unet.ipynb` pelo VSCode) foram guardadas em
+  `git stash`, sem perda.
+- **Trabalho de 26/10 que não está no GitHub**: o card do Trello "Subir para o GitHub"
+  cita os commits `95f88dd` e `7739cd1` (`docs/base_oficial.md`,
+  `docs/tabela_experimentos.md`, `docs/contrato_api.md`, `docs/discordancia_unet/`,
+  `docs/referencias.md`, `scripts/run_nodulos_parede.py` e outros). Eles não existem no
+  GitHub nem neste computador, e a cópia em OneDrive é um clone quebrado. Foram feitos
+  em outro computador da Amabilly, sem acesso no momento. **Recuperar e dar push de lá
+  quando possível.** Também não estão no repositório a API (`api/`) do Rafael nem o
+  front-end (`app/`).
+- **Resultados finais regenerados com o código corrigido** (region growing e U-Net
+  reavaliados nos 26 exames de teste; o baseline não mudou). Resultados anteriores
+  arquivados em `data/luna16/archive_pre_correcoes_2026-10-26/`. Dice médio [IC95%]:
+  baseline 0,9555 [0,9416; 0,9663], region growing **0,9354** [0,9006; 0,9582],
+  U-Net **0,9818** [0,9790; 0,9843]. A U-Net vence o baseline em **26 de 26** exames
+  (antes 23 de 26), +0,0263 [0,0176; 0,0378], p (Holm) < 0,001. Os três tempos agora
+  são medidos em CPU na mesma máquina (16 / 19 / 62 s por TC), o que resolve a
+  limitação "tempo da U-Net medido em GPU, não comparável".
+- **Análise de nódulos apagados reproduzida e versionada**
+  (`scripts/analise_nodulos_apagados.py`, `data/luna16/nodulos_apagados_teste.csv` e
+  `nodulos_apagados_resumo.csv`): o resultado da Sprint 5 foi reproduzido de forma
+  independente com **os mesmos números**. Dos 43 nódulos em 18 exames de teste, a
+  referência apaga 1, o baseline 13, o region growing 15 e a U-Net 3. U-Net mantém 11
+  que o baseline apaga contra 1 (McNemar exato, p = 0,006). A diferença está nos
+  nódulos colados na pleura (baseline apaga 8 de 9; U-Net, 2).
+- **Figuras do seminário** em `docs/seminario/` (`scripts/gerar_figuras_seminario.py`).
+- **`RELATORIO_FINAL_RASCUNHO.md` atualizado**: U-Net como terceiro método, split
+  70/15/15, correções, tabela final, comparação pareada, seção de nódulos apagados,
+  limitações revisadas. Falta a reescrita com as palavras do grupo (card no Backlog).
+
 ---
 
 ## Próximos passos / pendências em aberto
+
+### Adicionado em 2026-11-09
+
+- [ ] **Recuperar do outro computador da Amabilly** os commits `95f88dd` e `7739cd1` e
+  dar push (base oficial de 678 exames, tabela de experimentos, contrato da API,
+  discordância U-Net × gabarito, referências).
+- [ ] **Rafael e Ruan/Érica: subir `api/` e `app/` para o GitHub** — hoje não existem
+  no repositório.
+- [ ] Rodar a comparação dos 3 métodos e a análise de nódulos no **teste novo de 99
+  exames** (precisa do HD externo do Roger).
+- [ ] Reescrever o `RELATORIO_FINAL_RASCUNHO.md` com as palavras do grupo (os números
+  já estão atualizados).
 
 ### Do feedback da Sprint 3 (prioridade alta — adicionado em 2026-10-05)
 

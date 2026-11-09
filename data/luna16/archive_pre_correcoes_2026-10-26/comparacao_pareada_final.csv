@@ -1,0 +1,7 @@
+Métrica,Comparação (B - A),N,Diferença média,IC95% inferior,IC95% superior,Exames em que B > A,Wilcoxon W,p-valor,p-valor (Holm),Significativo (5%)
+Dice,Region growing - Baseline,26,-0.049,-0.1172,-0.0082,2,29.0,5.1647424697875977e-05,6.371736526489258e-05,sim
+Dice,U-Net 2D - Baseline,26,0.0226,0.0118,0.0354,23,26.0,3.185868263244629e-05,6.371736526489258e-05,sim
+Dice,U-Net 2D - Region growing,26,0.0716,0.0237,0.1418,25,20.0,1.1056661605834961e-05,3.316998481750488e-05,sim
+IoU,Region growing - Baseline,26,-0.0617,-0.1379,-0.0149,2,29.0,5.1647424697875977e-05,6.371736526489258e-05,sim
+IoU,U-Net 2D - Baseline,26,0.041,0.0224,0.0626,23,26.0,3.185868263244629e-05,6.371736526489258e-05,sim
+IoU,U-Net 2D - Region growing,26,0.1027,0.0443,0.1837,25,20.0,1.1056661605834961e-05,3.316998481750488e-05,sim
