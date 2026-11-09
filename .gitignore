@@ -36,3 +36,6 @@ data/luna16/*
 # Checkpoints de modelos (decisao do Roger, 14/09: nao versionar pesos
 # treinados no Git -- ficam so no Colab/HD externo)
 *.pt
+
+# Arquivo local de contexto para a IA (nao versionar)
+PROJETO.md
