@@ -42,6 +42,7 @@ frase do nosso trabalho que ela sustenta.
 | Efron B, Tibshirani RJ. *An Introduction to the Bootstrap.* Chapman & Hall, 1993. | "O intervalo de confiança de 95% foi estimado por bootstrap com 10.000 reamostras." | conferir |
 | Wilcoxon F. *Individual comparisons by ranking methods.* Biometrics Bulletin, 1(6):80–83, 1945. | "A comparação entre métodos usou o teste de Wilcoxon pareado, que não assume normalidade." | conferir |
 | Holm S. *A simple sequentially rejective multiple test procedure.* Scandinavian Journal of Statistics, 6(2):65–70, 1979. | "Os p-valores foram corrigidos por Holm, porque fizemos mais de uma comparação." | conferir |
+| Fayyad U, Piatetsky-Shapiro G, Smyth P. *From data mining to knowledge discovery in databases.* AI Magazine, 17(3):37–54, 1996. | "O trabalho segue as cinco etapas do processo KDD: seleção, pré-processamento, transformação, mineração e interpretação." | conferir |
 | McNemar Q. *Note on the sampling error of the difference between correlated proportions or percentages.* Psychometrika, 12(2):153–157, 1947. | "A preservação de nódulos entre métodos foi comparada com o teste exato de McNemar, para dados pareados." | conferir |
 
 ## Como usar no artigo
