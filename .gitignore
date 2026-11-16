@@ -34,6 +34,7 @@ data/luna16/*
 !data/luna16/*_novo.csv
 !data/luna16/*_novo.png
 !data/luna16/classificador_fp_reduction.joblib
+!data/luna16/kdd/
 !data/luna16/nodulos_apagados_teste.csv
 !data/luna16/nodulos_apagados_resumo.csv
 !data/luna16/archive_pre_correcoes_2026-10-26/
