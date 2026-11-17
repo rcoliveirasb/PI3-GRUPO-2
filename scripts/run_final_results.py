@@ -68,7 +68,7 @@ METRICAS = [
 def carregar_resultados(split_path: Path, conjunto: str, sufixo: str) -> dict[str, pd.DataFrame]:
     """Le os 3 CSVs e garante que os 3 metodos rodaram exatamente nos mesmos
     pacientes do conjunto de teste -- sem isso a comparacao pareada nao vale."""
-    split = pd.read_csv(split_path)
+    split = pd.read_csv(split_path).rename(columns={"seriesuid": "uid", "split": "conjunto"})
     test_uids = set(split.loc[split["conjunto"] == conjunto, "uid"])
 
     dfs = {}
