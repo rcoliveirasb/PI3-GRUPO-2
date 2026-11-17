@@ -76,7 +76,14 @@ def build_or_load_full_split() -> pd.DataFrame:
     return full_split
 
 
-def evaluate_resumable(uids, segment_fn, out_path: Path, label: str) -> pd.DataFrame:
+def ler_split(caminho: Path) -> pd.DataFrame:
+    """Le um split no formato do grupo (uid, conjunto) ou no do treino novo
+    do Roger (seriesuid, split), devolvendo sempre as colunas uid e conjunto."""
+    df = pd.read_csv(caminho)
+    return df.rename(columns={"seriesuid": "uid", "split": "conjunto"})
+
+
+def evaluate_resumable(uids, segment_fn, out_path: Path, label: str, dados: Path = DATA_DIR) -> pd.DataFrame:
     if out_path.exists():
         done_df = pd.read_csv(out_path)
         done_uids = set(done_df["uid"])
@@ -89,7 +96,7 @@ def evaluate_resumable(uids, segment_fn, out_path: Path, label: str) -> pd.DataF
 
     rows = done_df.to_dict("records")
     for i, uid in enumerate(pending, 1):
-        r = run_pipeline_for_uid(uid, DATA_DIR, segment_fn=segment_fn)
+        r = run_pipeline_for_uid(uid, dados, segment_fn=segment_fn)
         rows.append(vars(r))
         print(
             f"[{label} {i}/{len(pending)}] {uid[-10:]}  dice={r.dice:.4f}  iou={r.iou:.4f}  "
@@ -107,18 +114,23 @@ def main():
     parser.add_argument("--split", type=Path, help="CSV de split (uid, conjunto); padrao: split_full.csv")
     parser.add_argument("--conjunto", default="test", help="valor da coluna 'conjunto' a avaliar")
     parser.add_argument("--sufixo", default="", help="sufixo dos CSVs de saida, ex: _novo")
+    parser.add_argument(
+        "--dados", type=Path, default=DATA_DIR,
+        help="pasta com subset*/<uid>.mhd e seg-lungs-LUNA16/ (padrao: data/luna16; "
+        "no HD: D:/DATASET_LUNA16/ct_preparados). Os CSVs de saida continuam em data/luna16",
+    )
     args = parser.parse_args()
 
-    full_split = pd.read_csv(args.split) if args.split else build_or_load_full_split()
+    full_split = ler_split(args.split) if args.split else build_or_load_full_split()
     test_uids = full_split.loc[full_split["conjunto"] == args.conjunto, "uid"].tolist()
     print(f"\nConjunto '{args.conjunto}': {len(test_uids)} pacientes\n", flush=True)
 
     print("=== Baseline (threshold -600HU + morfologia) ===", flush=True)
-    evaluate_resumable(test_uids, segment_baseline, DATA_DIR / f"sprint4_baseline_test{args.sufixo}.csv", "baseline")
+    evaluate_resumable(test_uids, segment_baseline, DATA_DIR / f"sprint4_baseline_test{args.sufixo}.csv", "baseline", dados=args.dados)
 
     print("\n=== Region growing ===", flush=True)
     evaluate_resumable(
-        test_uids, segment_region_growing, DATA_DIR / f"sprint4_region_growing_test{args.sufixo}.csv", "region_growing"
+        test_uids, segment_region_growing, DATA_DIR / f"sprint4_region_growing_test{args.sufixo}.csv", "region_growing", dados=args.dados
     )
 
     print("\nCONCLUIDO", flush=True)

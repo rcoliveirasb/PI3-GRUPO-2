@@ -82,9 +82,14 @@ Os parâmetros do pré-processamento e dos métodos estão em
 
 ## 5. Pendências deste documento
 
-- **Arquivos da fase 2 no repositório** (Roger): `split_novo.csv`, a lista dos 32 exames
-  excluídos e o identificador do exame com geometria divergente. Até isso estar no GitHub, a
-  fase 2 não é reproduzível pelo grupo.
+- **Arquivos da fase 2 no repositório** (Roger): o `split_novo.csv` já está no GitHub, em
+  `pji/modelos/unet_seed123/`, junto com os pesos e a avaliação da rede final. Ainda faltam
+  a lista dos 32 exames excluídos e o identificador do exame com geometria divergente.
+- **107 ou 99 exames de teste? (17/11)** O `split_novo.csv` e a rede final (semente 123) **não**
+  aplicam o filtro de espaçamento: a rede foi treinada com 497 exames e avaliada nos 107 de
+  `teste_interno`. Por isso o teste oficial dos três métodos passa a ser o de **107**. Os
+  números 479/100/99 da seção 3 descrevem o treino mostrado na Sprint 4. Roger confirma, e
+  depois esta seção 3 é reescrita. Ver [`tabela_experimentos.md`](tabela_experimentos.md).
 - **Parâmetros escolhidos só com a validação** (pré-banca, orientação 6): documentar em quais
   exames foram definidos o limiar de −600 HU, o raio morfológico e a tolerância do region
   growing, e garantir que nenhum deles foi ajustado olhando o teste.
