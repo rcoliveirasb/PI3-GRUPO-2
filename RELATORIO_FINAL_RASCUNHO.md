@@ -18,16 +18,18 @@ Este trabalho tem dois objetivos encadeados: (1) segmentar o parênquima pulmona
 tomografias computadorizadas (TC) de tórax, isolando-o das estruturas adjacentes; e
 (2), usando essa segmentação, **detectar nódulos pulmonares** — o objetivo que dá
 sentido clínico ao projeto, auxiliando o médico a localizar pontos suspeitos para
-investigação. Para (1), comparamos duas técnicas clássicas: um baseline de
-limiarização em Unidades Hounsfield (HU) com operações morfológicas, e region
-growing com sementes automáticas. Usando 177 pacientes do dataset público LUNA16
-(35 reservados para teste, split por paciente), avaliamos ambos os métodos contra
-as máscaras de referência oficiais, usando Dice Coefficient e IoU como métricas
-primárias, com intervalos de confiança de 95% por bootstrap (500 reamostras). O
-baseline atingiu Dice médio de 0,962 (IC95% [0,958; 0,966]) e o region growing
-0,953 (IC95% [0,948; 0,957]) — diferença estatisticamente significativa a favor do
-baseline, que também foi mais rápido; ambos superaram a meta do projeto (Dice ≥
-0,85) em 100% dos pacientes de teste. Para (2), implementamos um detector de
+investigação. Para (1), comparamos três métodos: um baseline de limiarização em
+Unidades Hounsfield (HU) com operações morfológicas, region growing com sementes
+automáticas e uma U-Net 2D treinada. Usando 177 pacientes do dataset público LUNA16
+(split 70/15/15 por paciente, 26 de teste), avaliamos os três contra as máscaras de
+referência oficiais, com Dice e IoU como métricas primárias e intervalos de confiança
+de 95% por bootstrap. Dice médio: U-Net 0,9818 (IC95% [0,9790; 0,9843]), baseline
+0,9555 ([0,9416; 0,9663]) e region growing 0,9354 ([0,9006; 0,9582]). A U-Net superou
+os dois métodos clássicos em todos os 26 exames (Wilcoxon pareado com correção de
+Holm, p < 0,001), mas com margem pequena sobre o baseline (+0,026) e cerca de 4 vezes
+o tempo em CPU. A diferença aparece com mais força fora do Dice: dos 43 nódulos
+anotados nos exames de teste, a máscara do baseline apaga 13 (8 dos 9 colados na
+pleura) e a da U-Net apaga 3 (McNemar, p = 0,006). Para (2), implementamos um detector de
 candidatos a nódulo via blob detection (Laplacian of Gaussian) restrito à região
 pulmonar já segmentada, avaliado no padrão FROC (o mesmo usado pelo desafio LUNA16
 original) em 20 pacientes com anotação disponível: sensibilidade de 75,9% (63/83
@@ -62,8 +64,8 @@ detecção de nódulos a partir de TCs já segmentadas; van Ginneken et al. (200
 Hofmanninger et al. (2020) tratam especificamente de segmentação pulmonar, o
 segundo com foco em como a diversidade de dados (não a metodologia) é o principal
 obstáculo prático; Ronneberger et al. (2015) introduz a U-Net, referência para
-segmentação médica com aprendizado profundo, não utilizada na abordagem principal
-deste trabalho (ver seção 7, Limitações).
+segmentação médica com aprendizado profundo, usada aqui como terceiro método
+(seção 2.5), o método aprendido comparado aos dois clássicos.
 
 ## 2. Metodologia (Etapas do KDD)
 
@@ -102,19 +104,44 @@ raio 1 voxel) para remover estruturas espúrias pequenas.
 Segunda técnica, com mecanismo distinto do baseline: em vez de um limiar global único,
 cresce uma região a partir de um ponto semente por pulmão (escolhido automaticamente
 como o ponto mais interior de cada componente candidato, via transformada de
-distância), incluindo vizinhos com intensidade dentro de uma banda de tolerância
-(±200 HU) ao redor do valor da semente. O crescimento é restrito à mesma região
-"segura" do baseline, pelo mesmo motivo (evitar vazamento pela via aérea).
+distância, **entre os voxels abaixo de −750 HU**), incluindo vizinhos com intensidade
+dentro de uma banda de tolerância (±200 HU) ao redor do valor da semente. O
+crescimento é restrito à mesma região "segura" do baseline, pelo mesmo motivo (evitar
+vazamento pela via aérea).
 
-### 2.5. Avaliação
+O corte de −750 HU na escolha da semente foi uma correção feita em 26/10 (ver seção
+5.2): sem ele, a semente podia cair na franja de volume parcial ao redor dos vasos
+(~−600 HU), deslocando a banda de crescimento para [−800, −400] HU, que não alcança o
+parênquima aerado (~−850 HU).
+
+### 2.5. U-Net 2D (método aprendido)
+
+Atende à etapa de Mineração de Dados do KDD exigida no feedback do professor. Rede
+U-Net 2D compacta aplicada a fatias axiais redimensionadas para 128×128, treinada com
+perda BCE + Dice (Adam, taxa de aprendizado 1e-3, 25 épocas) nos 124 exames de
+treino, com GPU no Google Colab (`colab_treinar_unet.ipynb`,
+`scripts/train_unet_baseline.py`; checkpoint em `data/luna16/unet_baseline.pt`).
+
+**Pós-processamento espacial**: a rede decide por aparência local e não tem noção de
+"fora do corpo", por isso chegou a marcar o ar do colchão/mesa do tomógrafo como
+pulmão. A saída passa por uma limpeza de componentes conexos que mantém os
+componentes com pelo menos 15% do volume do maior
+(`lung_air.keep_components_by_fraction`). Um número fixo de componentes ("os 2
+maiores") não funciona, porque na saída da U-Net os dois pulmões costumam sair
+conectados pela carina num único componente, e a segunda vaga ficava com o maior
+blob espúrio.
+
+### 2.6. Avaliação
 
 Dice Coefficient e IoU como métricas primárias (metas do projeto: Dice ≥ 0,85, IoU
 ≥ 0,75); sensibilidade, precisão por pixel e tempo por TC como métricas secundárias.
-Intervalos de confiança de 95% por bootstrap não-paramétrico (500 reamostras),
-reportados para cada método isoladamente e para a diferença pareada por paciente
-entre os dois métodos.
+Intervalos de confiança de 95% por bootstrap não-paramétrico (10.000 reamostras,
+acima do mínimo de 500 do projeto), reportados para cada método. As diferenças entre
+métodos são testadas de forma pareada por paciente (teste de Wilcoxon, com correção
+de Holm para as três comparações) e acompanhadas do IC95% por bootstrap da diferença
+média (`scripts/run_final_results.py`).
 
-### 2.6. Detecção de nódulos
+### 2.7. Detecção de nódulos
 
 Etapa final do pipeline (o objetivo clínico do projeto): dentro da região pulmonar
 já segmentada, detectar candidatos a nódulo via blob detection (Laplacian of
@@ -141,12 +168,19 @@ de esferas, sem rasterização).
 ## 3. Protocolo Experimental
 
 - **Split treino/validação/teste por paciente** (nunca por fatia/imagem, para evitar
-  vazamento de informação): 60% treino / 20% validação / 20% teste, embaralhado com
-  seed fixa (42). Verificação programática de que os três conjuntos são disjuntos.
-- **Conjunto de teste**: 35 pacientes, nunca utilizados em nenhuma decisão de
-  metodologia (limiar, parâmetros de morfologia, tolerância do region growing) —
-  todas essas escolhas foram feitas e validadas nos conjuntos de treino/piloto antes
-  da avaliação final reportada aqui.
+  vazamento de informação): **70% treino / 15% validação / 15% teste** (124 / 27 / 26
+  pacientes), conforme exigido no feedback do professor, embaralhado com seed fixa
+  (42). Verificação programática de que os três conjuntos são disjuntos. (Uma versão
+  anterior usava 60/20/20 com 35 pacientes de teste; os resultados dela estão
+  arquivados em `data/luna16/archive_split_v1_60_20_20/` e não são usados aqui.)
+- **Conjunto de teste**: 26 pacientes, os mesmos para os três métodos, nunca
+  utilizados em decisões de metodologia (limiar, parâmetros de morfologia, tolerância
+  do region growing, hiperparâmetros da U-Net). **Ressalva honesta**: as duas
+  correções de 26/10 (semente do region growing e limpeza da U-Net) foram
+  diagnosticadas olhando exames que falhavam *no conjunto de teste*. Elas corrigem
+  defeitos de implementação com justificativa física/anatômica, e não ajustes de
+  parâmetro para subir a nota, mas o ideal seria confirmá-las num conjunto que não
+  tenha sido inspecionado (por exemplo, nos 888 exames completos).
 - **Reprodutibilidade**: seed fixa (42) em todas as etapas com componente aleatório
   (split, bootstrap); dependências com versão congelada (`requirements.txt`); código
   de segmentação e métricas em um pacote Python reutilizável (`src/luna16/`), não
@@ -154,24 +188,78 @@ de esferas, sem rasterização).
 
 ## 4. Resultados
 
-*(tabela extraída de `data/luna16/tabela_resultados_finais.csv`, gerada em
-`sprint6_resultados_finais_grp2.ipynb` — colar a tabela/imagem exata dessa execução
-aqui na versão final)*
+Os 26 exames de teste (split 70/15/15) são os mesmos para os três métodos, e o código
+inclui as correções de 26/10. Média com IC95% por bootstrap (10.000 reamostras).
+Fonte: `data/luna16/tabela_resultados_finais.csv`, gerada por
+`scripts/run_final_results.py` em 09/11. Gráficos: `data/luna16/grafico_dice_iou_final.png`
+e `data/luna16/grafico_comparacao_pareada.png`.
 
-| Método | Dice | IoU | Sensibilidade | Precisão | Tempo/TC (s) |
-|---|---|---|---|---|---|
-| Baseline | 0,962 [0,958; 0,966] | 0,928 [0,920; 0,935] | 0,943 [0,935; 0,950] | 0,982 [0,980; 0,984] | 15,1 |
-| Region growing | 0,953 [0,948; 0,957] | 0,910 [0,901; 0,917] | 0,923 [0,914; 0,930] | 0,985 [0,983; 0,987] | 17,6 |
+| Método | Dice | IoU | Sensibilidade | Precisão | Tempo/TC (s) | Dice mín. | Exames ≥ 0,85 |
+|---|---|---|---|---|---|---|---|
+| Baseline | 0,9555 [0,9416; 0,9663] | 0,9165 [0,8928; 0,9350] | 0,9308 [0,9072; 0,9492] | 0,9834 [0,9809; 0,9858] | 16,0 | 0,8468 | 25 de 26 |
+| Region growing | 0,9354 [0,9006; 0,9582] | 0,8867 [0,8378; 0,9201] | 0,8986 [0,8492; 0,9323] | 0,9848 [0,9821; 0,9874] | 19,4 | 0,5941 | 24 de 26 |
+| U-Net 2D | **0,9818** [0,9790; 0,9843] | **0,9644** [0,9590; 0,9691] | **0,9742** [0,9689; 0,9786] | **0,9897** [0,9882; 0,9909] | 62,1 | 0,9628 | 26 de 26 |
 
-Diferença pareada (region growing − baseline) em Dice: −0,010 (IC95% [−0,013; −0,007])
-— estatisticamente significativa a favor do baseline. Mesma direção para IoU e
-sensibilidade. Region growing supera o baseline apenas em precisão, por margem pequena
-(+0,002, IC95% [0,002; 0,003]).
+Os três tempos foram medidos na mesma máquina, em CPU, com o pré-processamento incluído.
+Em versões anteriores, o tempo da U-Net vinha de GPU no Colab e não era comparável com
+os outros dois.
 
-**100% dos 35 pacientes de teste atingiram Dice ≥ 0,85 em ambos os métodos** — a meta
-do projeto foi cumprida com folga por ambas as abordagens.
+**Comparação pareada** (`data/luna16/comparacao_pareada_final.csv`; Wilcoxon pareado
+com correção de Holm, IC95% por bootstrap da diferença média):
 
-### 4.1. Detecção de nódulos
+| Comparação | Δ Dice médio [IC95%] | Exames em que o 1º vence | p (Holm) |
+|---|---|---|---|
+| U-Net − baseline | +0,0263 [0,0176; 0,0378] | 26 de 26 | < 0,001 |
+| U-Net − region growing | +0,0464 [0,0254; 0,0790] | 26 de 26 | < 0,001 |
+| Region growing − baseline | −0,0200 [−0,0434; −0,0064] | 2 de 26 | < 0,001 |
+
+A U-Net é melhor que os dois métodos clássicos em todos os 26 exames de teste, e a
+diferença é estatisticamente significativa. Antes das correções ela vencia o baseline em
+23 de 26: as três derrotas vinham do ar fora do tórax que a rede marcava como pulmão.
+Na média, o ganho é pequeno (+0,026 de Dice), porque o baseline já é muito bom. Ele se
+concentra nos casos difíceis, como mostra a análise dos piores casos.
+
+**Efeito das correções de 26/10** (`data/luna16/comparacao_correcoes.csv`; resultados
+anteriores arquivados em `data/luna16/archive_pre_correcoes_2026-10-26/`): o Dice médio
+do region growing foi de 0,9065 para 0,9354, e o exame que colapsava passou de 0,226
+para 0,978. O da U-Net foi de 0,9781 para 0,9818, com 963 mL de falso positivo
+removidos e sensibilidade inalterada. O baseline não mudou.
+
+### 4.1. A segmentação apaga nódulos?
+
+O Dice mede o volume do pulmão inteiro, e um nódulo de 6 mm pesa quase nada nele.
+Para a etapa seguinte do pipeline (detecção de nódulos), porém, o que importa é outra
+coisa: um nódulo que a máscara apaga nunca chega ao detector. Por isso verificamos, para
+cada um dos 43 nódulos anotados nos 18 exames de teste que têm nódulo, se ele continua
+dentro da máscara de cada método (`scripts/analise_nodulos_apagados.py`; resultado em
+`data/luna16/nodulos_apagados_teste.csv`). Critérios fixados antes de rodar: o nódulo é
+uma esfera com o diâmetro anotado. Ele conta como **mantido** se pelo menos 50% da esfera
+está dentro da máscara, e como **colado na borda** (justapleural) se a esfera, inflada em
+2 mm, toca tecido (HU > −300) fora da máscara de referência.
+
+| Máscara | Mantidos (de 43) | Colados na borda mantidos (de 9) | No interior mantidos (de 34) | Apagados |
+|---|---|---|---|---|
+| Referência do LUNA16 | 42 | 8 | 34 | 1 |
+| Baseline (limiar −600 HU) | 30 | 1 | 29 | 13 |
+| Region growing | 28 | 1 | 27 | 15 |
+| U-Net 2D | 40 | 7 | 33 | 3 |
+
+A U-Net mantém 11 nódulos que o baseline apaga, e o contrário acontece em só 1 caso
+(McNemar exato, p = 0,006). A diferença está quase toda nos nódulos **colados na
+borda**: o baseline e o region growing apagam 8 dos 9, e a U-Net apaga 2. Faz sentido
+pelo mecanismo. Um nódulo justapleural é tecido denso (acima de −600 HU) encostado na
+parede do tórax, então o limiar o classifica como "não pulmão", e o preenchimento de
+buracos não o recupera, porque ele não é um buraco fechado: está aberto para a
+parede. A U-Net aprendeu com a máscara de referência, que inclui esses nódulos, e por
+isso os mantém.
+
+**Por que isso importa**: no Dice, a U-Net ganha só +0,026 do baseline. Em nódulos
+apagados, a diferença é de 13 contra 3. A métrica do projeto (Dice) subestima a
+vantagem da U-Net justamente no que mais importa para a etapa seguinte. Esse resultado
+foi obtido primeiro na Sprint 5 e reproduzido de forma independente em 09/11, com os
+mesmos números.
+
+### 4.2. Detecção de nódulos
 
 Avaliação em 20 pacientes com anotação de referência disponível (83 nódulos no
 total, dos 240 disponíveis nos 177 pacientes baixados):
@@ -190,16 +278,21 @@ positivos que inviabiliza uso direto sem uma etapa seguinte de triagem (ver seç
 
 ## 5. Discussão
 
-### 5.1. Por que o método mais simples venceu
+### 5.1. A U-Net vence, mas o baseline já resolve quase tudo
 
-O baseline superou o region growing nas duas métricas primárias do projeto, além de
-ser mais rápido. Isso é consistente com a natureza do problema: o ar do parênquima
-pulmonar é tão distintamente separado em HU (abaixo de -600) de qualquer outra
-estrutura torácica que um limiar global bem construído já captura quase toda a
-informação relevante de uma vez — a adaptatividade local do region growing não se
-traduziu em vantagem prática aqui. Isso não invalida o region growing como técnica em
-geral; sugere que sua vantagem relativa tende a aparecer em alvos com fronteiras
-menos nítidas ou tecido mais heterogêneo, não neste problema específico.
+Entre os métodos clássicos, o baseline superou o region growing nas duas métricas
+primárias e ainda foi mais rápido. Isso combina com a natureza do problema: o ar do
+parênquima fica tão separado em HU (abaixo de −600) das outras estruturas do tórax que
+um limiar global bem construído já captura quase toda a informação de uma vez. A
+adaptatividade local do region growing não virou vantagem prática aqui.
+
+A U-Net venceu os dois em todos os exames, mas a margem sobre o baseline é pequena
+(+0,026 de Dice) e custa cerca de 4 vezes mais tempo em CPU, além de exigir treino e
+dados rotulados. A contribuição do trabalho, portanto, não é "a rede ganha". É
+quantificar quanto ela ganha, onde ganha (nos casos difíceis e na borda do pulmão) e o
+que isso custa. O Dice médio do pulmão inteiro esconde a diferença que mais importa
+para a detecção de nódulos, a da borda: o baseline apaga 13 de 43 nódulos e a U-Net
+apaga 3 (seção 4.1).
 
 ### 5.2. O achado mais importante da análise de falha foi um bug, não um caso clínico
 
@@ -238,10 +331,12 @@ problema, não uma limitação escondida.
 
 ### 5.4. Custo computacional
 
-O baseline domina em ambas as dimensões relevantes (Dice/IoU e tempo) — não há um
-trade-off real a favor do region growing nesta tarefa específica. Tempo médio de
-15,1s (baseline) e 17,6s (region growing) por TC, ambos compatíveis com uso em lote
-fora de tempo real, mas o baseline oferece margem maior para escalonamento.
+Tempo médio por TC na mesma máquina (CPU, pré-processamento incluído): baseline 16,0 s,
+region growing 19,4 s e U-Net 62,1 s. Entre os clássicos, o baseline vence em
+qualidade e em tempo. A U-Net troca cerca de 4 vezes mais tempo por +0,026 de Dice e
+por manter mais nódulos de borda. Os três tempos são compatíveis com processamento em
+lote fora de tempo real. Com GPU, o tempo da U-Net cai bastante, mas isso exige um
+hardware que o baseline dispensa.
 
 ## 6. Limitações do Domínio
 
@@ -265,15 +360,23 @@ fora de tempo real, mas o baseline oferece margem maior para escalonamento.
   quem rodou) depende de cada pessoa configurar seu próprio token de API do Kaggle
   para baixar os dados, uma etapa manual documentada no README.
 - **Escopo de subsets**: o trabalho usa 177 dos 888 pacientes totais do LUNA16
-  (`subset0` + `subset1`) — suficiente para os requisitos mínimos do projeto (≥20 TCs
-  de teste, com folga: 35), mas uma validação em todo o dataset daria maior potência
-  estatística.
+  (`subset0` + `subset1`). Isso basta para o requisito mínimo do projeto (≥20 TCs de
+  teste; aqui são 26), mas validar no dataset todo daria mais potência estatística. A
+  migração para os 888 exames está em andamento (`scripts/treinamento novo (888)/`).
+- **A máscara de referência não é anotação manual**: `seg-lungs-LUNA16` foi gerada
+  por algoritmo automático pelos organizadores do LUNA16. Concordar com ela não é o
+  mesmo que concordar com a anatomia real. A inspeção visual de 12 exames de teste
+  (`entrega/inspecao_visual/`) mostrou vieses sistemáticos que o Dice médio não
+  revela: a traqueia entra na máscara predita do baseline em 12 de 12 exames, o
+  volume predito fica sempre abaixo do de referência (em média 5%, até 22%) e 22% das
+  fatias têm Dice abaixo de 0,8, mesmo com média de 0,96 por paciente.
 
 ## 7. Conclusão
 
 O trabalho entregou as duas etapas propostas: segmentação confiável do parênquima
-pulmonar (baseline com Dice 0,962, superando a meta do projeto com folga em 100%
-dos pacientes de teste) e um detector de candidatos a nódulo funcional sobre essa
+pulmonar (todos os três métodos acima da meta de Dice ≥ 0,85 na média; a U-Net, com
+0,9818, acima dela em 26 de 26 exames e apagando só 3 de 43 nódulos, contra 13 do
+baseline) e um detector de candidatos a nódulo funcional sobre essa
 segmentação (75,9% de sensibilidade). A contribuição mais honesta do trabalho não é
 alegar um sistema pronto para uso clínico — é demonstrar, com evidência quantitativa
 rigorosa (bootstrap, testes pareados, avaliação FROC), exatamente onde métodos

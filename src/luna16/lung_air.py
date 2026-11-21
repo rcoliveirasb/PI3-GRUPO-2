@@ -70,6 +70,46 @@ def keep_largest_components(binary: np.ndarray, n_keep: int = 2) -> np.ndarray:
     return np.isin(labeled, keep_labels)
 
 
+def keep_components_by_fraction(
+    binary: np.ndarray, frac_min: float = 0.15, n_max: int = 2
+) -> np.ndarray:
+    """Como `keep_largest_components`, mas em vez de um numero fixo de
+    componentes usa o TAMANHO RELATIVO ao maior: mantem os componentes com pelo
+    menos `frac_min` do volume do maior (ate `n_max` deles).
+
+    Existe porque "os 2 maiores" falha quando os dois pulmoes vem grudados num
+    componente so. Achado real (Sprint 5, exame ...696274044574): na saida da
+    U-Net os dois pulmoes saem conectados pela regiao da carina, formando um
+    unico componente de 4.939 mL. Como `keep_largest_components(n_keep=2)`
+    reserva duas vagas, a segunda sobra para o maior blob espurio -- 189 mL de
+    ar da mesa do tomografo, que assim era mantido na mascara final.
+
+    O criterio relativo resolve porque se apoia em anatomia: dois pulmoes tem
+    tamanhos comparaveis entre si, enquanto um blob espurio e uma ordem de
+    grandeza menor. No exame acima, os blobs de mesa ficam em 3,8% do maior
+    componente e caem fora; se os pulmoes viessem separados (digamos 2.500 e
+    2.400 mL), o segundo ficaria em 96% do primeiro e seria mantido.
+
+    `frac_min=0.15` e conservador: um pulmao real raramente e menor que 15% do
+    contralateral, mesmo com perda de volume importante.
+    """
+    no_background = remove_background_per_slice(binary)
+
+    labeled = measure.label(no_background, connectivity=1)
+    if labeled.max() == 0:
+        return np.zeros_like(binary, dtype=bool)
+
+    sizes = np.bincount(labeled.ravel())
+    sizes[0] = 0
+    ordem = np.argsort(sizes)[::-1]
+    maior = sizes[ordem[0]]
+    if maior == 0:
+        return np.zeros_like(binary, dtype=bool)
+
+    keep = [int(l) for l in ordem[:n_max] if sizes[l] >= frac_min * maior]
+    return np.isin(labeled, keep)
+
+
 def label_largest_components(binary: np.ndarray, n_keep: int = 2) -> tuple[np.ndarray, list[int]]:
     """Como `keep_largest_components`, mas devolve o volume rotulado (cada
     componente com seu proprio inteiro) em vez de uma mascara booleana unica

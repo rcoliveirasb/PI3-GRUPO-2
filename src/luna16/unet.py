@@ -148,7 +148,12 @@ def load_trained_model(checkpoint_path: str = "data/luna16/unet_baseline.pt") ->
     return model
 
 
-def segment_with_unet(volume_hu: np.ndarray, model: SmallUNet2D) -> np.ndarray:
+def segment_with_unet(
+    volume_hu: np.ndarray,
+    model: SmallUNet2D,
+    limpar_fora_do_torax: bool = True,
+    frac_min: float = 0.15,
+) -> np.ndarray:
     """Segmenta um volume 3D (ja limpo/reamostrado, mesma entrada esperada
     por segment_baseline/segment_region_growing) fatia a fatia com o U-Net.
 
@@ -156,8 +161,30 @@ def segment_with_unet(volume_hu: np.ndarray, model: SmallUNet2D) -> np.ndarray:
     rede foi treinada para receber), passa pela rede, e a predicao volta pro
     tamanho original da fatia antes de empilhar -- assim a mascara final tem
     a mesma resolucao do volume de entrada, igual aos outros metodos.
+
+    `limpar_fora_do_torax` aplica a limpeza espacial que o baseline e o region
+    growing ja faziam: descarta o que toca a borda da imagem fatia a fatia e
+    mantem so os componentes 3D de tamanho comparavel ao maior
+    (`lung_air.keep_components_by_fraction`). A rede, sozinha, nao tem nenhuma
+    nocao de "isto esta fora do corpo" -- ela decide por aparencia local, e o ar
+    do colchao/mesa do tomografo se parece com pulmao: escuro, cercado de
+    material mais claro.
+
+    Usa o criterio RELATIVO e nao "os 2 maiores" porque na saida da rede os dois
+    pulmoes costumam vir grudados num componente so (pela regiao da carina);
+    com duas vagas fixas, a segunda sobrava para o maior blob de mesa. Ver
+    `keep_components_by_fraction` para o caso concreto.
+
+    Achado real (analise dos piores casos, Sprint 4): no exame ...696274044574
+    a U-Net marcou 672,5 mL de ar da mesa do tomografo como pulmao -- dez vezes
+    o falso positivo do baseline no mesmo exame -- e foi o unico caso dos 26 em
+    que ela perdeu feio (Dice 0,928 contra 0,973 do baseline). Como esse viés e
+    espacial e nao de aparencia, nao se corrige com mais treino; corrige-se com
+    a restricao anatomica que os metodos classicos ja carregavam.
     """
     from skimage.transform import resize
+
+    from .lung_air import keep_components_by_fraction
 
     z, h, w = volume_hu.shape
     mask = np.zeros((z, h, w), dtype=bool)
@@ -172,5 +199,12 @@ def segment_with_unet(volume_hu: np.ndarray, model: SmallUNet2D) -> np.ndarray:
             probs = torch.sigmoid(logits).squeeze().cpu().numpy()
             probs_full = resize(probs, (h, w), order=1, anti_aliasing=True, preserve_range=True)
             mask[i] = probs_full > 0.5
+
+    if limpar_fora_do_torax and mask.any():
+        limpa = keep_components_by_fraction(mask, frac_min=frac_min)
+        # salvaguarda: se a limpeza zerar a predicao (caso degenerado em que
+        # tudo encostava na borda), devolve a mascara crua em vez de nada
+        if limpa.any():
+            mask = limpa
 
     return mask

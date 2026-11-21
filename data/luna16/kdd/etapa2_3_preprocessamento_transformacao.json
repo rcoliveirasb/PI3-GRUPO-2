@@ -1,0 +1,40 @@
+{
+  "uid_exemplo": "1.3.6.1.4.1.14519.5.2.1.6279.6001.109002525524522225658609808059",
+  "pre_processamento": {
+    "hu_bruto_min_max": [
+      -3024,
+      2211
+    ],
+    "voxels_de_padding_fora_do_fov_pct": 21.28,
+    "hu_limpo_min_max": [
+      -1000,
+      400
+    ],
+    "ruido_removido_desvio_hu": 68.27
+  },
+  "transformacao": {
+    "spacing_original_xyz_mm": [
+      0.549,
+      0.549,
+      1.25
+    ],
+    "shape_original_zyx": [
+      161,
+      512,
+      512
+    ],
+    "shape_isotropico_1mm_zyx": [
+      201,
+      281,
+      281
+    ],
+    "entrada_unet_shape": [
+      128,
+      128
+    ],
+    "entrada_unet_min_max": [
+      -1.0,
+      0.966
+    ]
+  }
+}

@@ -10,6 +10,12 @@ data/luna16/archive_split_v1_60_20_20/).
 
 Uso (a partir da raiz do repositorio): python scripts/run_final_results.py
 
+Split novo (orientacao 1 do feedback da Sprint 4), depois de rodar
+run_sprint4_evaluation.py e run_unet_evaluation.py com --sufixo _novo:
+  python scripts/run_final_results.py --split data/luna16/split_novo.csv --sufixo _novo
+Le os CSVs com o sufixo e salva tabela, comparacao e graficos com o mesmo
+sufixo, sem sobrescrever os resultados dos 26 exames.
+
 Le:
   data/luna16/sprint4_baseline_test.csv
   data/luna16/sprint4_region_growing_test.csv
@@ -20,6 +26,7 @@ Salva:
   data/luna16/grafico_dice_iou_final.png
   data/luna16/grafico_comparacao_pareada.png
 """
+import argparse
 import sys
 from itertools import combinations
 from pathlib import Path
@@ -45,9 +52,9 @@ META_IOU = 0.75
 DATA_DIR = Path("data/luna16")
 
 METODOS = [
-    ("baseline", "Baseline (threshold -600HU + morfologia)", "Baseline", "sprint4_baseline_test.csv", "steelblue"),
-    ("region_growing", "Region growing", "Region growing", "sprint4_region_growing_test.csv", "darkorange"),
-    ("unet", "U-Net 2D", "U-Net 2D", "sprint_unet_test.csv", "seagreen"),
+    ("baseline", "Baseline (threshold -600HU + morfologia)", "Baseline", "sprint4_baseline_test", "steelblue"),
+    ("region_growing", "Region growing", "Region growing", "sprint4_region_growing_test", "darkorange"),
+    ("unet", "U-Net 2D", "U-Net 2D", "sprint_unet_test", "seagreen"),
 ]
 METRICAS = [
     ("dice", "Dice"),
@@ -58,14 +65,15 @@ METRICAS = [
 ]
 
 
-def carregar_resultados() -> dict[str, pd.DataFrame]:
+def carregar_resultados(split_path: Path, conjunto: str, sufixo: str) -> dict[str, pd.DataFrame]:
     """Le os 3 CSVs e garante que os 3 metodos rodaram exatamente nos mesmos
     pacientes do conjunto de teste -- sem isso a comparacao pareada nao vale."""
-    split = pd.read_csv(DATA_DIR / "split_full.csv")
-    test_uids = set(split.loc[split["conjunto"] == "test", "uid"])
+    split = pd.read_csv(split_path).rename(columns={"seriesuid": "uid", "split": "conjunto"})
+    test_uids = set(split.loc[split["conjunto"] == conjunto, "uid"])
 
     dfs = {}
-    for chave, _, _, arquivo, _ in METODOS:
+    for chave, _, _, base, _ in METODOS:
+        arquivo = f"{base}{sufixo}.csv"
         df = pd.read_csv(DATA_DIR / arquivo)
         assert df["uid"].is_unique, f"{arquivo}: uid duplicado"
         assert set(df["uid"]) == test_uids, f"{arquivo}: pacientes diferentes do conjunto de teste do split"
@@ -135,7 +143,7 @@ def comparar_pares(dfs: dict[str, pd.DataFrame]) -> pd.DataFrame:
     return pd.DataFrame(linhas)
 
 
-def grafico_dice_iou(dfs: dict[str, pd.DataFrame], n: int) -> None:
+def grafico_dice_iou(dfs: dict[str, pd.DataFrame], n: int, sufixo: str) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     rotulos = [curto for _, _, curto, _, _ in METODOS]
     cores = [cor for *_, cor in METODOS]
@@ -157,11 +165,11 @@ def grafico_dice_iou(dfs: dict[str, pd.DataFrame], n: int) -> None:
         ax.legend(loc="lower right")
 
     plt.tight_layout()
-    plt.savefig(str(DATA_DIR / "grafico_dice_iou_final.png"), dpi=150)
+    plt.savefig(str(DATA_DIR / f"grafico_dice_iou_final{sufixo}.png"), dpi=150)
     plt.close(fig)
 
 
-def grafico_pareado(dfs: dict[str, pd.DataFrame], n: int) -> None:
+def grafico_pareado(dfs: dict[str, pd.DataFrame], n: int, sufixo: str) -> None:
     ordem = dfs["baseline"]["dice"].sort_values().index
     x = np.arange(n)
 
@@ -175,25 +183,31 @@ def grafico_pareado(dfs: dict[str, pd.DataFrame], n: int) -> None:
     ax.set_ylim(0, 1.02)
     ax.legend(loc="lower right")
     plt.tight_layout()
-    plt.savefig(str(DATA_DIR / "grafico_comparacao_pareada.png"), dpi=150)
+    plt.savefig(str(DATA_DIR / f"grafico_comparacao_pareada{sufixo}.png"), dpi=150)
     plt.close(fig)
 
 
 def main():
-    dfs = carregar_resultados()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--split", type=Path, default=DATA_DIR / "split_full.csv")
+    parser.add_argument("--conjunto", default="test", help="valor da coluna 'conjunto' avaliado")
+    parser.add_argument("--sufixo", default="", help="sufixo dos CSVs de entrada e das saidas, ex: _novo")
+    args = parser.parse_args()
+
+    dfs = carregar_resultados(args.split, args.conjunto, args.sufixo)
     n = len(dfs["baseline"])
     print(f"N = {n} pacientes de teste, mesmos uids nos 3 metodos\n", flush=True)
 
     tabela = montar_tabela(dfs)
-    tabela.to_csv(DATA_DIR / "tabela_resultados_finais.csv")
+    tabela.to_csv(DATA_DIR / f"tabela_resultados_finais{args.sufixo}.csv")
     print(tabela.to_string(), "\n", flush=True)
 
     comparacao = comparar_pares(dfs)
-    comparacao.to_csv(DATA_DIR / "comparacao_pareada_final.csv", index=False)
+    comparacao.to_csv(DATA_DIR / f"comparacao_pareada_final{args.sufixo}.csv", index=False)
     print(comparacao.to_string(index=False), "\n", flush=True)
 
-    grafico_dice_iou(dfs, n)
-    grafico_pareado(dfs, n)
+    grafico_dice_iou(dfs, n, args.sufixo)
+    grafico_pareado(dfs, n, args.sufixo)
     print("CONCLUIDO", flush=True)
 
 

@@ -30,42 +30,33 @@ verifica, para cada exame antes de processá-lo:
 | 2 | Espaçamento entre fatias (`spacing_z`) ≤ 2,5mm | Critério de qualidade do grupo, mais restritivo que o corte de 3mm do próprio LUNA16 — verificação, não redundância, já que o LUNA16 curado quase sempre já satisfaz isso |
 | 3 | Máscara de referência não vazia | Máscara com zero voxels indicaria arquivo corrompido/ausente de fato, não um paciente sem pulmão |
 
-Nenhum exame do subconjunto processado até agora (ver seção 3) foi excluído por esses
-critérios — a curadoria do próprio LUNA16 já é suficiente na prática.
+Na fase 1 (177 exames), nenhum exame foi excluído por esses critérios. Na fase 2, o
+critério 2 excluiu 32 exames, e mais 1 saiu por geometria divergente entre a imagem e a
+máscara (ver [`base_oficial.md`](base_oficial.md)).
 
-## 3. Estado real de download (importante — gap entre o alvo e o que está processado)
+## 3. Exames usados
 
-- **Meta formal**: os 888 exames do LUNA16 completo. Uma cópia integral (~133GB) foi
-  baixada por Roger para um HD externo no início do projeto.
-- **O que está de fato integrado ao pipeline reprodutível do grupo até 2026-09-14**:
-  apenas **177 pacientes** (`subset0` + `subset1`, baixados via mirror do Kaggle
-  `avc0706/luna16`, arquivo a arquivo, por `scripts/download_luna16_subset.py`) — os
-  outros 8 subsets (≈711 pacientes) ainda não foram baixados/processados por esse
-  pipeline.
-- **Por quê a diferença**: baixar e processar os 888 exames completos tem custo de
-  armazenamento (~120GB) e tempo de execução (o pipeline de avaliação já leva
-  15–20 min para 35 pacientes) que não coube no tempo disponível até este checkpoint.
-- **Decisão pendente**: se o grupo deve migrar para o conjunto completo (via o HD
-  externo do Roger) antes da próxima entrega, ou manter o escopo em 177 pacientes com
-  essa limitação documentada explicitamente no relatório final. Ver `PROJETO.md`.
+A contagem completa está em [`base_oficial.md`](base_oficial.md), seção 3. Em resumo:
+
+- **Fase 1 (histórico):** 177 exames (`subset0` + `subset1`).
+- **Fase 2 (oficial desde a Sprint 4):** os 888 exames do LUNA16, da cópia integral no HD
+  externo do Roger. Os 177 da fase 1 ficaram em quarentena e 1 exame foi removido por
+  geometria divergente, sobrando 710 inéditos. Depois do filtro de espaçamento sobram 678.
 
 ## 4. Split treino/validação/teste
 
 **Proporção oficial: 70/15/15, por paciente, seed fixa (42).**
 
 - Cada `SeriesInstanceUID` do LUNA16 corresponde a um único paciente (verificado contra
-  `PatientID` do LIDC-IDRI quando disponível) — logo splitar por UID é splitar por
-  paciente, atendendo à regra de não misturar o mesmo paciente entre conjuntos.
+  `PatientID` do LIDC-IDRI quando disponível). Logo, dividir por UID é dividir por paciente,
+  e o mesmo paciente nunca aparece em dois conjuntos.
 - Implementado em `src/luna16/splits.py` (`patient_split`, `train_frac=0.7,
   val_frac=0.15`), com checagem de vazamento em `assert_no_leakage`.
-- **Nota de reconciliação**: entre os Sprints 3 e 8, o grupo usou 60/20/20 sobre os 177
-  pacientes então disponíveis (arquivo `data/luna16/split_full.csv`, gerado em
-  2026-09-01) — proporção diferente da exigida pelo professor. A função de split já foi
-  atualizada para 70/15/15 em 2026-09-02, mas o artefato `split_full.csv` **ainda não foi
-  regenerado** com a nova proporção, e os resultados publicados até agora
-  (`sprint4_*_test.csv`, `tabela_resultados_finais.csv`, etc.) ainda refletem o split
-  antigo (60/20/20). Isso precisa ser corrigido antes da próxima entrega — ver
-  `PROJETO.md`, seção "Próximos passos".
+- **Fase 1:** 124 / 27 / 26 (`data/luna16/split_full.csv`, regenerado em 2026-09-14).
+- **Fase 2:** sorteio 497 / 106 / 107 sobre os 710 exames inéditos; depois do filtro de
+  espaçamento, ficam 479 / 100 / 99 (678 exames).
+- **Histórico:** entre as Sprints 3 e 8 o grupo usou 60/20/20 (35 exames de teste). Os
+  resultados desse período estão em `data/luna16/archive_split_v1_60_20_20/`.
 
 ## 5. Parâmetros do pipeline (documentação exigida pelo feedback)
 

@@ -90,10 +90,21 @@ def preparar(uid, modelo):
     tra = sitk.GetArrayFromImage(
         resample_isotropic(_to_sitk(raw == TRACHEA_LABEL, ct_sitk, "uint8"), TARGET, True)).astype(bool)
 
+    # IMPORTANTE -- este script reproduz o DIAGNOSTICO da Sprint 4, com o
+    # comportamento ANTERIOR as correcoes da Sprint 5. Os dois parametros
+    # abaixo fixam isso de proposito:
+    #
+    #   seed_max_hu=-1e9        desliga o corte de HU da semente
+    #   limpar_fora_do_torax=False  desliga a limpeza espacial da U-Net
+    #
+    # Sem isso, reexecutar o script produziria region growing 0,978 em vez de
+    # 0,226 e a narrativa do notebook (que explica POR QUE dava 0,226) passaria
+    # a contradizer as proprias figuras. O diagnostico precisa continuar
+    # reproduzivel; o efeito das correcoes esta em scripts/medir_correcoes.py.
     preds, tempos = {}, {}
     for nome, fn in [("baseline", lambda v: segment_baseline(v)),
-                     ("region_growing", lambda v: segment_region_growing(v)),
-                     ("unet", lambda v: segment_with_unet(v, modelo))]:
+                     ("region_growing", lambda v: segment_region_growing(v, seed_max_hu=-1e9)),
+                     ("unet", lambda v: segment_with_unet(v, modelo, limpar_fora_do_torax=False))]:
         t0 = time.time()
         preds[nome] = fn(vol)
         tempos[nome] = time.time() - t0
