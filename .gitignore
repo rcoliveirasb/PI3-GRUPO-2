@@ -22,13 +22,26 @@ data/luna16/*
 !data/luna16/sprint8_resultados.csv
 !data/luna16/sprint8b_resultados.csv
 !data/luna16/sprint8c_resultados_finais.csv
+!data/luna16/comparacao_correcoes.csv
 !data/luna16/sprint_unet_test.csv
 !data/luna16/tabela_resultados_finais.csv
 !data/luna16/comparacao_pareada_final.csv
 !data/luna16/grafico_dice_iou_final.png
 !data/luna16/grafico_comparacao_pareada.png
+!data/luna16/nodulos_parede_test.csv
+!data/luna16/nodulos_parede_resumo.csv
+!data/luna16/split_novo.csv
+!data/luna16/*_novo.csv
+!data/luna16/*_novo.png
 !data/luna16/classificador_fp_reduction.joblib
+!data/luna16/kdd/
+!data/luna16/nodulos_apagados_teste.csv
+!data/luna16/nodulos_apagados_resumo.csv
+!data/luna16/archive_pre_correcoes_2026-10-26/
 
 # Checkpoints de modelos (decisao do Roger, 14/09: nao versionar pesos
 # treinados no Git -- ficam so no Colab/HD externo)
 *.pt
+
+# Arquivo local de contexto para a IA (nao versionar)
+PROJETO.md

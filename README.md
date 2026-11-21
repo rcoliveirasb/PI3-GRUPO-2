@@ -22,6 +22,21 @@ pulmonar, medindo Dice Coefficient (meta: ≥ 0,85 para os métodos clássicos, 
 para a U-Net) e IoU contra as máscaras de referência oficiais do dataset, em pelo
 menos 20 TCs de teste, com intervalo de confiança de 95% por bootstrap.
 
+## Hipótese e processo KDD
+
+**Hipótese:** métodos clássicos baseados na escala de Hounsfield já atingem Dice acima
+da meta, e a U-Net 2D os supera, ao custo de mais tempo de processamento. Ela é testada
+como três hipóteses com H0/H1 explícitas (meta, region growing × baseline, U-Net ×
+clássicos). Ver [`docs/hipotese.md`](docs/hipotese.md).
+
+**KDD:** as cinco etapas (seleção, pré-processamento, transformação, mineração,
+interpretação) rodam em ordem num único script, que salva a evidência de cada etapa em
+`data/luna16/kdd/` e termina com o teste das hipóteses:
+```
+python scripts/pipeline_kdd.py
+```
+Ver [`docs/kdd.md`](docs/kdd.md) para o que cada etapa faz, onde está o código e o resultado.
+
 > **Nota de escopo**: o pulmão já segmentado poderia, em uma extensão futura, servir
 > de base para detecção de nódulos pulmonares. O grupo implementou uma versão inicial
 > dessa extensão (`sprint7_deteccao_nodulos_grp2.ipynb`), mas ela **não faz parte do
@@ -80,7 +95,11 @@ definição formal do problema (pergunta SMART, métricas) está em
    python scripts/train_unet_baseline.py     # ~15-20min
    python scripts/run_unet_evaluation.py     # ~15-25min
    ```
-8. Abrir os notebooks **na ordem** (cada um pode depender de arquivos gerados pelo anterior — ver tabela abaixo).
+8. Rodar o pipeline KDD completo, que confere a reprodutibilidade e testa as hipóteses (~1 min):
+   ```
+   python scripts/pipeline_kdd.py
+   ```
+9. Abrir os notebooks **na ordem** (cada um pode depender de arquivos gerados pelo anterior — ver tabela abaixo).
 
 ## Notebooks (ordem de execução)
 
@@ -108,12 +127,14 @@ comentadas inline).
 
 ## Scripts
 
+- [`scripts/pipeline_kdd.py`](scripts/pipeline_kdd.py): roda as 5 etapas do KDD em ordem e testa as hipóteses do trabalho; saídas em `data/luna16/kdd/` (ver [`docs/kdd.md`](docs/kdd.md)).
+
 - [`scripts/download_luna16_subset.py`](scripts/download_luna16_subset.py) `N`: baixa o subset N do LUNA16 (89 pacientes + máscaras de referência) via API do Kaggle.
 - [`scripts/regenerate_split_70_15_15.py`](scripts/regenerate_split_70_15_15.py): (re)gera `split_full.csv` com a proporção 70/15/15 por paciente; arquiva o split/resultados anteriores (60/20/20) em `data/luna16/archive_split_v1_60_20_20/`.
 - [`scripts/run_sprint4_evaluation.py`](scripts/run_sprint4_evaluation.py): roda baseline e region growing em todo o conjunto de teste (retomável — salva progresso por paciente, seguro de interromper e retomar).
 - [`scripts/train_unet_baseline.py`](scripts/train_unet_baseline.py) / [`scripts/run_unet_evaluation.py`](scripts/run_unet_evaluation.py): treina e avalia o U-Net 2D de contingência (ver `src/luna16/unet.py`).
 - [`scripts/run_nodule_evaluation.py`](scripts/run_nodule_evaluation.py): roda a detecção de nódulos em até 20 pacientes com anotação disponível (retomável).
 
-## Estrat�gia de revis�o e integra��o
+## Estratégia de revisão e integração
 
-A branch sprints-3-8 ser� revisada pelo grupo por meio de um Pull Request antes do merge para main. Essa abordagem permite revisar os commits, altera��es de c�digo e documenta��o das Sprints 3�8 antes de incorpor�-las � branch principal.
+A branch sprints-3-8 será revisada pelo grupo por meio de um Pull Request antes do merge para main. Essa abordagem permite revisar os commits, alterações de código e documentação das Sprints 3–8 antes de incorporá-las à branch principal.

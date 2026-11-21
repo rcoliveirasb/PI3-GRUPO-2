@@ -37,6 +37,27 @@ esse isolamento é o problema deste grupo.
   por fatia — ver [`docs/criterios_inclusao.md`](docs/criterios_inclusao.md)), dentro do
   cronograma de sprints da disciplina.
 
+## Hipótese do trabalho
+
+> **A segmentação automática do parênquima pulmonar em TC do LUNA16 atinge sobreposição
+> útil (Dice acima da meta) com métodos clássicos baseados na escala de Hounsfield, e um
+> método aprendido (U-Net 2D) supera os métodos clássicos em sobreposição, ao custo de
+> mais tempo de processamento.**
+
+Ela se divide em três hipóteses testáveis, com H0 e H1 explícitas e teste estatístico
+definido (Wilcoxon unilateral pareado, correção de Holm, α = 0,05):
+
+- **H1 — meta:** o Dice médio de cada método passa da meta (0,85 para os clássicos,
+  0,75 para a U-Net). **Confirmada** para os três.
+- **H2 — adaptativo × global:** o region growing tem Dice maior que o baseline.
+  **Refutada**: foi pior (−0,020 [−0,043; −0,006]).
+- **H3 — aprendido × clássico:** a U-Net tem Dice maior que cada método clássico.
+  **Confirmada** (+0,026 sobre o baseline, +0,046 sobre o region growing).
+
+Formulação completa, justificativa, resultados e ressalvas em
+[`docs/hipotese.md`](docs/hipotese.md). O processo KDD que testa essas hipóteses está em
+[`docs/kdd.md`](docs/kdd.md).
+
 ## Métricas (corrigidas)
 
 | Métrica | Papel | Meta | Por que (e por que não Kappa/acurácia) |
