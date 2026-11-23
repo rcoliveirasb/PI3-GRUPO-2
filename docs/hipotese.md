@@ -55,7 +55,7 @@ Código: [`src/luna16/hipotese.py`](../src/luna16/hipotese.py). Executado pela e
 ## Resultado no teste novo (oficial, 107 exames)
 
 U-Net semente 123, treinada nos 497 exames de treino. Fonte: os CSVs por exame do commit
-`6a8716e`.
+`a0ca409`.
 
 | Hipótese | Efeito observado [IC95%] | p (Holm) | Decisão |
 |---|---|---|---|

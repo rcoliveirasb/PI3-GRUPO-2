@@ -105,7 +105,7 @@ Métricas por paciente: Dice, IoU, sensibilidade, precisão e tempo
 verificado em 16/11 e de novo em 22/11, com as bibliotecas atualizadas (SimpleITK 2.5.8).
 
 **Teste novo (oficial, 107 exames).** O mesmo código também foi rodado nos 107 exames de
-`teste_interno` do `split_novo.csv` (commit `6a8716e`).
+`teste_interno` do `split_novo.csv` (commit `a0ca409`).
 - A U-Net usada é a **semente 123**, treinada nos 497 exames de treino da base de 888
   (`pji/modelos/unet_seed123`).
 - Os volumes desses exames ficam no HD externo do Roger, por isso o script não os reexecuta.

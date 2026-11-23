@@ -2,7 +2,7 @@
 """
 Novo treino da U-Net 2D (LUNA16) com os exames FORA dos 177 usados antes.
 
-Reproduz a receita do Colab (commit 45cb163), lida do codigo:
+Reproduz a receita do Colab (commit 6b04715), lida do codigo:
   - pre-processamento: clean_hu -> gaussiano 3D (sigma 0.5) -> reamostragem
     isotropica 1 mm (CT linear, mascara vizinho-mais-proximo)
   - mascara = rotulos 3 e 4 (parenquima; traqueia/5 fica de fora)
