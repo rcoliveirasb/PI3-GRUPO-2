@@ -159,6 +159,12 @@ Se o `pip` não conseguir instalar o `torch`, instale a versão para CPU:
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 ```
 
+**No Windows, use uma pasta de caminho curto** (por exemplo, `C:\PI3-GRUPO-2`). O `torch`
+tem arquivos com caminhos muito longos, e numa pasta funda a instalação falha com
+`OSError: [Errno 2] No such file or directory` ou com `DLL load failed` ao importar. A outra
+saída é ativar os caminhos longos do Windows
+([instruções](https://pip.pypa.io/warnings/enable-long-paths)) e reinstalar.
+
 ### 4.2 Conferir os resultados sem baixar nada
 
 Recalcula, a partir dos CSVs por exame já versionados, a tabela oficial dos 107 exames, com
