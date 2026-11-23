@@ -1,0 +1,114 @@
+O Pulmo Scan é um protótipo de interface desenvolvido para auxiliar na organização e 
+visualização de exames de tomografia computadorizada dos pulmões.
+
+Ele foi pensado para fazer parte de um projeto de Inteligência Artificial 
+cujo objetivo é segmentar automaticamente o parênquima pulmonar a partir 
+de tomografias do dataset LUNA16, como etapa anterior à detecção de nódulos pulmonares.
+
+Atualmente, o sistema possui uma interface funcional para demonstrar como seria a 
+utilização da ferramenta por um profissional da área médica.
+
+**1. Gerenciamento de pacientes**
+
+Na parte superior do aplicativo, temos as abas dos pacientes.
+
+É possível:
+- Visualizar os pacientes cadastrados.
+- Alternar entre pacientes pelas abas.
+- Fechar uma aba pelo botão ×.
+- Reabrir pacientes pelo histórico.
+- Cadastrar novos pacientes.
+- Pesquisar pacientes pelo nome.
+Ao fechar uma aba, o paciente não é excluído: ele continua disponível no histórico.
+
+**2. Cadastro e informações do paciente**
+
+Cada paciente possui uma área com suas informações.
+
+Atualmente, é possível visualizar e editar:
+- Nome do paciente.
+- Peso em quilogramas.
+- Observações adicionais.
+Essas informações ficam associadas ao paciente selecionado.
+
+**3. Histórico de exames**
+
+Cada paciente pode possuir vários exames.
+
+O sistema permite:
+- Criar novos exames.
+- Navegar entre exames usando as setas laterais.
+- Visualizar o nome e a data de cada exame.
+- Identificar quantos exames existem para aquele paciente.
+- Manter os exames separados por paciente.
+
+Um detalhe importante: as setas navegam somente entre os exames do paciente selecionado, 
+sem alterar as abas dos outros pacientes.
+
+**4. Upload de tomografias**
+
+O aplicativo possui uma área específica para carregar os arquivos de tomografia.
+
+O usuário pode:
+- Arrastar um arquivo para a área de upload.
+- Clicar para procurar um arquivo no computador.
+- Associar o arquivo ao exame selecionado.
+- Visualizar o nome do arquivo carregado.
+Foram previstos formatos como .mhd, .raw, .nii, .dcm, .png e .jpg.
+
+**5. Visualizador do exame**
+
+A interface possui uma área central destinada à visualização da tomografia.
+
+Atualmente, ela apresenta:
+- Nome do paciente.
+- Identificação do exame.
+- Status do arquivo.
+- Área reservada para a imagem.
+- Dataset de referência LUNA16.
+- Data do exame.
+- Número da fatia.
+
+Por enquanto, o sistema identifica o arquivo selecionado, mas ainda não realiza a 
+leitura e a renderização médica da tomografia.
+
+**6. Segmentação pulmonar**
+
+Essa é a principal funcionalidade prevista para o projeto.
+
+A interface já possui o botão Iniciar segmentação, que representa o início do processamento 
+da tomografia.
+
+Também existe um painel destinado aos resultados, com campos para:
+- Área segmentada.
+- Parênquima.
+- Quantidade de fatias analisadas.
+- Tempo de processamento.
+
+ Atenção: essa parte ainda é demonstrativa. O botão atualmente altera o status do exame,
+ mas não executa um modelo de Inteligência Artificial. 
+ Os resultados reais dependerão da integração com o backend e o modelo de segmentação.
+
+ **7. Salvamento de resultados**
+
+O sistema possui um botão chamado Salvar resultado.
+
+Ao utilizá-lo, é gerado um arquivo JSON contendo informações como:
+- Nome, peso e observações do paciente.
+- Nome e data do exame.
+- Nome do arquivo carregado.
+- Status do exame.
+- Número da fatia.
+- Campo reservado para os resultados da segmentação.
+
+Esse recurso permite demonstrar como os dados poderão ser exportados futuramente.
+
+**8. Configurações**
+
+O aplicativo também possui um botão de configurações, representado pelo ícone de engrenagem.
+
+Atualmente, apresenta:
+- Tema utilizado: escuro.
+- Dataset de referência: LUNA16.
+- Aviso sobre futuras configurações clínicas e de processamento.
+Essa área está preparada para receber funcionalidades adicionais.

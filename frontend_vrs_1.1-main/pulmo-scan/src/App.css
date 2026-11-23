@@ -1,0 +1,171 @@
+* { box-sizing: border-box; }
+:root { font-family: Arial, Helvetica, sans-serif; color: #f5f5f5; background: #000; font-synthesis: none; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: #000; color: #f5f5f5; font-size: 13px; }
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #ff7a45; outline-offset: 2px; }
+button:disabled { cursor: not-allowed; }
+.app { min-height: 100vh; padding: 5px; background: #000; }
+
+/* Cabeçalho e abas separadas por paciente */
+.topbar { position: relative; z-index: 5; height: 44px; display: flex; align-items: stretch; gap: 12px; padding: 0 10px; background: #202020; border: 1px solid #333; }
+.logo { display: flex; align-items: center; flex: 0 0 180px; margin: 0; color: #f5f5f5; font-family: Georgia, serif; font-size: 21px; white-space: nowrap; }
+.separador { align-self: center; width: 4px; height: 25px; flex: 0 0 4px; background: #fff; }
+.icone-pacientes, .configuracoes { display: grid; place-items: center; flex: 0 0 32px; align-self: center; width: 32px; height: 34px; padding: 4px; border: 0; border-radius: 5px; background: transparent; color: #fff; }
+.icone-pacientes svg, .configuracoes svg, .aba-paciente svg, .avatar-paciente svg { width: 24px; height: 24px; fill: currentColor; }
+.icone-pacientes:hover, .icone-pacientes.selecionado, .configuracoes:hover { background: #343434; color: #ff8755; }
+.abas-pacientes { display: flex; flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #555 #202020; }
+.aba-paciente { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; max-width: 210px; min-width: 112px; height: 100%; padding: 0 10px; border: 0; border-bottom: 4px solid transparent; background: transparent; color: #cfcfcf; text-align: left; }
+.aba-paciente svg { flex: 0 0 20px; width: 20px; height: 20px; }
+.aba-paciente span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aba-paciente:hover { background: #292929; }
+.aba-paciente.ativa { border-bottom-color: #ff5b19; color: #fff; background: #262626; }
+.acoes-topbar { display: flex; align-items: center; flex: 0 0 auto; margin-left: auto; }
+
+/* Menus */
+.popover-topo { position: absolute; top: 49px; z-index: 20; width: min(360px, calc(100vw - 30px)); padding: 15px; border: 1px solid #454545; border-radius: 8px; background: #202020; box-shadow: 0 12px 35px #000b; }
+.historico-popover { left: 210px; }
+.config-popover { right: 10px; width: min(320px, calc(100vw - 30px)); }
+.popover-cabecalho { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.popover-cabecalho h2 { margin: 0 0 5px; font-size: 16px; }
+.popover-cabecalho p, .config-aviso { margin: 0; color: #aaa; font-size: 11px; line-height: 1.5; }
+.fechar-popover { border: 0; background: transparent; color: #bbb; font-size: 24px; line-height: 1; }
+.busca-pacientes, .form-novo-paciente input, .form-novo-paciente textarea { width: 100%; padding: 9px 10px; border: 1px solid #454545; border-radius: 5px; background: #151515; color: #fff; }
+.busca-pacientes { margin-bottom: 8px; }
+.lista-pacientes { display: flex; flex-direction: column; max-height: 250px; overflow-y: auto; }
+.item-paciente { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 7px; border: 0; border-radius: 5px; background: transparent; color: #eee; text-align: left; }
+.item-paciente:hover, .item-paciente.ativo { background: #303030; }
+.avatar-paciente { display: grid; place-items: center; width: 35px; height: 35px; flex: 0 0 35px; border-radius: 50%; background: #38302b; color: #ff8755; }
+.dados-lista-paciente { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
+.dados-lista-paciente strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dados-lista-paciente small, .sem-resultados { color: #aaa; font-size: 11px; }
+.seta-lista { color: #ff8755; font-size: 24px; }
+.botao-novo-paciente { width: 100%; margin-top: 10px; padding: 10px; border: 1px solid #ff5b19; border-radius: 5px; background: #2a201b; color: #ff8755; font-weight: bold; }
+.form-novo-paciente { display: grid; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #444; }
+.form-novo-paciente label { display: grid; gap: 5px; color: #ddd; font-size: 11px; }
+.form-novo-paciente textarea { min-height: 60px; resize: vertical; }
+.form-novo-paciente .botao-laranja { width: 100%; }
+.config-item { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid #383838; }
+.config-item span { color: #bbb; }
+.config-item strong { color: #ff8755; }
+.config-aviso { margin-top: 12px; }
+
+/* Layout principal */
+.layout { display: grid; grid-template-columns: minmax(240px, 25%) minmax(0, 1fr); gap: 10px; padding: 15px 11px; }
+.sidebar { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.painel { min-width: 0; background: #1e1e1e; }
+.paciente { min-height: 154px; padding: 13px; }
+.paciente h2 { margin: 0 0 12px; font-size: 12px; text-align: center; }
+.paciente label { display: block; margin-bottom: 8px; font-weight: bold; }
+.paciente input, .paciente textarea { display: block; width: 100%; margin-top: 4px; padding: 7px; border: 1px solid #444; border-radius: 3px; background: #171717; color: #fff; font-size: 12px; }
+.paciente input:read-only { color: #ccc; background: #191919; }
+.paciente textarea { min-height: 60px; resize: vertical; }
+.paciente input::placeholder, .paciente textarea::placeholder { color: #929292; }
+.resultados { display: flex; flex: 1; flex-direction: column; min-height: 300px; padding: 12px; }
+.resultados h2 { margin: 0 0 22px; font-size: 17px; line-height: 1.2; }
+.resultados p { display: flex; justify-content: space-between; gap: 8px; margin: 0 0 11px; font-size: 11px; }
+.resultados strong { font-weight: 500; text-align: right; }
+.resultados .tempo { margin-top: 15px; margin-bottom: 25px; }
+.botao-laranja { display: flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 20px; border: 0; border-radius: 30px; background: #ff5b19; color: #fff; font-weight: bold; }
+.botao-laranja:hover { background: #ff743b; }
+.resultados .botao-laranja { align-self: center; margin-top: auto; }
+.resultados small { margin-top: 10px; color: #999; font-size: 9px; text-align: center; }
+
+/* Visualizador */
+.conteudo { position: relative; display: grid; grid-template-rows: minmax(250px, 1fr) auto; gap: 8px; min-width: 0; }
+.visualizador { display: flex; flex-direction: column; min-height: 250px; }
+.titulo-visualizador { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px; border-bottom: 1px solid #303030; font-size: 12px; font-weight: bold; }
+.nome-paciente-visualizador { color: #fff; }
+.separador-titulo { color: #777; }
+.status { color: #ff8755; font-size: 11px; font-weight: normal; text-align: right; }
+.imagem-tomografia { display: flex; flex: 1; align-items: center; justify-content: center; min-height: 190px; padding: 15px; background: #1e1e1e; text-align: center; }
+.mensagem-vazia, .arquivo-carregado { max-width: 100%; overflow-wrap: anywhere; }
+.mensagem-vazia h3, .arquivo-carregado h3 { font-size: 13px; font-weight: 600; }
+.mensagem-vazia p, .arquivo-carregado p, .arquivo-carregado small { color: #999; font-size: 11px; }
+.simbolo-tomografia { color: #ff5b19; font-size: 38px; }
+.rodape-visualizador { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; background: #181818; color: #bbb; font-size: 10px; }
+
+/* Área inferior e setas: navegam entre exames do paciente atual */
+.area-inferior { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(240px, 0.95fr); gap: 8px; min-width: 0; }
+.coluna-inferior { display: grid; grid-template-rows: auto 125px; gap: 8px; min-width: 0; }
+.informacoes-arquivo { padding: 10px 12px; }
+.informacoes-arquivo p { margin: 0 0 7px; overflow-wrap: anywhere; font-size: 11px; }
+.informacoes-arquivo strong { margin-right: 4px; }
+.controles-fatias { display: flex; align-items: center; justify-content: space-around; gap: 5px; background: #000; }
+.seta { padding: 8px; border: 0; background: transparent; color: #ff5b19; font-size: 30px; transition: color .15s, transform .15s; }
+.seta:hover:not(:disabled) { color: #ff8755; transform: scale(1.1); }
+.seta:disabled { color: #292929; }
+.controle-exame-centro { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.controle-exame-centro small { color: #888; font-size: 10px; }
+.botao-adicionar { display: grid; place-items: center; width: 94px; height: 94px; border: 0; border-radius: 50%; background: #252525; color: #ff5b19; font-size: 60px; font-weight: 300; line-height: 1; }
+.botao-adicionar:hover { background: #333; }
+
+/* Upload */
+.upload { display: flex; flex-direction: column; align-items: center; padding: 7px 10px 10px; }
+.area-upload { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 125px; padding: 15px 10px; border: 1px dashed #555; text-align: center; cursor: pointer; }
+.area-upload:hover { border-color: #ff5b19; background: #25201e; }
+.area-upload strong { font-size: 12px; }
+.area-upload span:not(.mais-upload) { color: #888; }
+.area-upload small { color: #999; font-size: 10px; overflow-wrap: anywhere; }
+.mais-upload { display: grid; place-items: center; width: 35px; height: 35px; border-radius: 50%; background: #111; color: #ff5b19; font-size: 30px; }
+.botao-upload { width: min(190px, 95%); min-height: 39px; margin-top: 9px; }
+.botao-processar { margin-top: 8px; padding: 7px 14px; border: 1px solid #555; border-radius: 20px; background: transparent; color: #ddd; font-size: 10px; }
+.botao-processar:disabled { opacity: .4; cursor: not-allowed; }
+.mensagem-feedback { position: sticky; bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; padding: 10px 12px; border: 1px solid #63402e; border-radius: 6px; background: #251b16; color: #ffd0b8; font-size: 11px; }
+.mensagem-feedback button { border: 0; background: transparent; color: #ffd0b8; font-size: 18px; }
+
+/* Responsividade */
+@media (max-width: 900px) {
+  .logo { flex-basis: 145px; }
+  .topbar { gap: 7px; }
+  .layout { grid-template-columns: minmax(210px, 30%) minmax(0, 1fr); padding: 12px 6px; }
+  .area-inferior { grid-template-columns: minmax(0, 1fr); }
+  .historico-popover { left: 10px; }
+}
+@media (max-width: 650px) {
+  .topbar { gap: 5px; padding: 0 5px; }
+  .logo { flex: 0 0 auto; font-size: 17px; }
+  .separador { margin-left: 3px; }
+  .aba-paciente { min-width: 95px; max-width: 150px; gap: 5px; padding: 0 7px; font-size: 11px; }
+  .layout { grid-template-columns: minmax(0, 1fr); padding: 10px 4px; }
+  .sidebar { display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; }
+  .resultados { min-height: 300px; }
+  .titulo-visualizador { align-items: flex-start; flex-direction: column; }
+  .status { text-align: left; }
+  .popover-topo { left: 5px; right: 5px; width: auto; }
+}
+@media (max-width: 430px) {
+  .sidebar { grid-template-columns: 1fr; }
+  .icone-pacientes, .configuracoes { flex-basis: 28px; width: 28px; }
+  .icone-pacientes svg, .configuracoes svg { width: 21px; height: 21px; }
+  .rodape-visualizador { flex-wrap: wrap; }
+}
+
+/* Abas de pacientes: botão de fechar */
+.aba-paciente-wrapper {
+  display: flex;
+  align-items: center;
+  border-bottom: 3px solid transparent;
+}
+
+.aba-paciente-wrapper.ativa {
+  border-bottom-color: var(--laranja, #ff6b35);
+}
+
+.aba-paciente-wrapper .aba-paciente {
+  border-bottom: 0;
+}
+
+.fechar-aba-paciente {
+  border: 0;
+  background: transparent;
+  color: #a8a8a8;
+  cursor: pointer;
+  font-size: 19px;
+  line-height: 1;
+  padding: 7px 9px 7px 3px;
+}
+
+.fechar-aba-paciente:hover {
+  color: #ff6b35;
+}
