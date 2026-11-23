@@ -14,11 +14,12 @@ Ela se divide em tres hipoteses testaveis, cada uma com H0 e H1 explicitas:
   H3 -- Aprendido x classico: a U-Net 2D tem Dice maior que cada metodo
         classico.
 
-Por que Wilcoxon e nao teste t: n=26 pacientes, com casos extremos (o region
-growing tem um exame com Dice 0,59), entao nao da para assumir normalidade
-das diferencas. O teste de postos sinalizados de Wilcoxon nao assume isso.
+Por que Wilcoxon e nao teste t: ha casos extremos (no teste novo de 107
+exames, o baseline tem um exame com Dice 0,38; no Teste A de 26, o region
+growing tem um com 0,59), entao nao da para assumir normalidade das
+diferencas. O teste de postos sinalizados de Wilcoxon nao assume isso.
 Todos os testes sao UNILATERAIS (a hipotese alternativa tem direcao) e
-pareados por paciente (mesmos 26 exames para os tres metodos). Dentro de cada
+pareados por paciente (os mesmos exames para os tres metodos). Dentro de cada
 familia com mais de um teste, os p-valores sao corrigidos por Holm.
 """
 from dataclasses import dataclass, asdict

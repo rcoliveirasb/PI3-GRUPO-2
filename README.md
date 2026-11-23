@@ -37,6 +37,29 @@ python scripts/pipeline_kdd.py
 ```
 Ver [`docs/kdd.md`](docs/kdd.md) para o que cada etapa faz, onde está o código e o resultado.
 
+## Resultados
+
+Teste oficial: **107 exames** (`teste_interno` de
+[`split_novo.csv`](data/luna16/split_novo/split_novo.csv), 70/15/15 por paciente,
+semente 42). Nenhum desses exames estava na primeira fase do projeto. A unidade é o
+exame (Dice 3D), e o IC95% vem de bootstrap com 10.000 reamostras.
+
+| Método | Dice [IC95%] | IoU [IC95%] | Sensibilidade | Pior exame | Exames < 0,85 |
+|---|---|---|---|---|---|
+| Baseline (−600 HU + morfologia) | 0,9492 [0,9336; 0,9604] | 0,9095 [0,8892; 0,9246] | 0,934 | 0,381 | 3 |
+| Region growing | 0,9353 [0,9201; 0,9479] | 0,8855 [0,8645; 0,9034] | 0,901 | 0,530 | 6 |
+| U-Net 2D (semente 123, 497 exames de treino) | **0,9838** [0,9827; 0,9847] | **0,9681** [0,9660; 0,9698] | 0,983 | 0,955 | 0 |
+
+- **H1 (meta):** confirmada nos três métodos.
+- **H2 (region growing > baseline):** refutada. A diferença foi de −0,0139
+  [−0,0282; −0,0004], no sentido oposto ao previsto.
+- **H3 (U-Net > clássicos):** confirmada. A U-Net foi melhor nos 107 exames.
+
+Com duas sementes de treino, a U-Net dá 0,9837 ± 0,0004 de Dice.
+
+Tabela completa, com unidade, semente, commit e arquivo de origem de cada número, e o
+histórico do Teste A (26 exames): [`docs/tabela_experimentos.md`](docs/tabela_experimentos.md).
+
 > **Nota de escopo**: o pulmão já segmentado poderia, em uma extensão futura, servir
 > de base para detecção de nódulos pulmonares. O grupo implementou uma versão inicial
 > dessa extensão (`sprint7_deteccao_nodulos_grp2.ipynb`), mas ela **não faz parte do

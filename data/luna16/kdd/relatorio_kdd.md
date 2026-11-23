@@ -1,6 +1,6 @@
 # Relatorio do pipeline KDD (gerado automaticamente)
 
-Gerado por `scripts/pipeline_kdd.py` em 2026-11-16 15:20. Nao editar a mao:
+Gerado por `scripts/pipeline_kdd.py` em 2026-11-22 23:48. Nao editar a mao:
 rode o script de novo. A explicacao de cada etapa esta em `docs/kdd.md` e a das
 hipoteses em `docs/hipotese.md`.
 
@@ -28,13 +28,36 @@ Figura: `etapa2_3_preprocessamento_transformacao.png`
 
 ## 5. Interpretacao / avaliacao
 
+### 5a. Teste novo (oficial)
+
+Conjunto oficial: 107 exames de `teste_interno` (`split_novo.csv`), U-Net semente 123.
+
+| Metodo | Dice [IC95%] | IoU [IC95%] | Tempo/TC (s) |
+|---|---|---|---|
+| Baseline (threshold -600HU + morfologia) | 0.9492 [0.9336, 0.9604] | 0.9095 [0.8892, 0.9246] | 6.2682 [5.8709, 6.6663] |
+| Region growing | 0.9353 [0.9201, 0.9479] | 0.8855 [0.8645, 0.9034] | 7.9754 [7.5178, 8.4501] |
+| U-Net 2D | 0.9838 [0.9827, 0.9847] | 0.9681 [0.9660, 0.9698] | 7.0949 [6.6833, 7.5108] |
+
+Teste das hipoteses (Wilcoxon unilateral pareado, Holm, alfa = 0,05):
+
+| Hipotese | H1 | Efeito [IC95%] | p (Holm) | Conclusao |
+|---|---|---|---|---|
+| H1 (Baseline) | Dice medio do Baseline > 0.85 | 0.9492 [0.9336; 0.9604] | 3.96e-16 | H0 rejeitada: evidencia a favor de H1 |
+| H1 (Region growing) | Dice medio do Region growing > 0.85 | 0.9353 [0.9201; 0.9479] | 1.14e-14 | H0 rejeitada: evidencia a favor de H1 |
+| H1 (U-Net 2D) | Dice medio do U-Net 2D > 0.75 | 0.9838 [0.9827; 0.9847] | 4.10e-19 | H0 rejeitada: evidencia a favor de H1 |
+| H2 | Dice do Region growing > Dice do Baseline | -0.0139 [-0.0282; -0.0004] | 1.00e+00 | H0 nao rejeitada: o efeito observado e o oposto do previsto (IC95% inteiro abaixo de 0) |
+| H3a | Dice do U-Net 2D > Dice do Baseline | 0.0346 [0.0238; 0.0496] | 2.73e-19 | H0 rejeitada: evidencia a favor de H1 |
+| H3b | Dice do U-Net 2D > Dice do Region growing | 0.0484 [0.0362; 0.0631] | 2.73e-19 | H0 rejeitada: evidencia a favor de H1 |
+
+### 5b. Teste A (26 exames, historico)
+
 | Metodo | Dice [IC95%] | IoU [IC95%] | Tempo/TC (s) |
 |---|---|---|---|
 | Baseline (threshold -600HU + morfologia) | 0.9555 [0.9416, 0.9663] | 0.9165 [0.8928, 0.9350] | 15.9511 [13.8279, 18.3373] |
 | Region growing | 0.9354 [0.9006, 0.9582] | 0.8867 [0.8378, 0.9201] | 19.3794 [16.8966, 22.1994] |
 | U-Net 2D | 0.9818 [0.9790, 0.9843] | 0.9644 [0.9590, 0.9691] | 62.1329 [57.4690, 66.9763] |
 
-### Teste das hipoteses (Wilcoxon unilateral pareado, Holm, alfa = 0,05)
+Teste das hipoteses (Wilcoxon unilateral pareado, Holm, alfa = 0,05):
 
 | Hipotese | H1 | Efeito [IC95%] | p (Holm) | Conclusao |
 |---|---|---|---|---|
