@@ -84,6 +84,33 @@ a API dá **exatamente** o Dice e o número de voxels de
 - Exame da lista que não está no HD aparece com `baixado: false` e responde 409.
   Se o HD não estiver conectado, a API não sobe (mensagem clara); use `API_MODO=fixo`.
 
+#### Modo pré-calculado (`API_MODO=precalculado`), para a demonstração
+
+Serve resultados **reais**, salvos em `api/resultados_precalculados/` e gerados por
+`api/gerar_precalculados.py` com o mesmo código do modo real (`inferir()`), sobre 3 exames do
+Teste A:
+- o pior caso do baseline;
+- o pior caso do region growing;
+- um caso típico.
+
+Detalhes:
+- **Métricas:** são do exame inteiro (3D).
+- **Fatia salva:** a de maior erro do método que dá nome ao caso, para a falha aparecer na
+  tela.
+- **Requisitos:** não precisa do HD nem do torch, e a resposta é instantânea.
+- **U-Net:** nenhum desses exames entrou no treino da U-Net semente 123.
+- **Formato:** o contrato é o mesmo dos outros modos. O `GET /saude` devolve
+  `"modo": "pre_calculado"`.
+
+| Exame | Baseline | Region growing | U-Net |
+|---|---|---|---|
+| `teste-a-808059` (pior caso do baseline) | 0,8468 | 0,7790 | 0,9758 |
+| `teste-a-831276` (pior caso do region growing) | 0,8600 | 0,5941 | 0,9720 |
+| `teste-a-421281` (caso típico) | 0,9640 | 0,9523 | 0,9888 |
+
+O modo `fixo` continua existindo para testar a tela, mas os números dele são
+**inventados**. Não use na demonstração.
+
 #### Os métodos da API são os mesmos do artigo (desde 23/11/2026)
 
 O modo real chama `src/luna16/inference.inferir()`, que agora usa **o mesmo código dos

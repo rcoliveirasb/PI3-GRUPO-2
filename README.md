@@ -101,10 +101,18 @@ Os dois arquivos devem sair idênticos aos do repositório (`git status` sem mud
 ```
 cd pji
 pip install -r api/requirements.txt
-uvicorn api.main:app --reload                      # modo fixo: dados de exemplo, não precisa das tomografias
-$env:API_MODO="real"; uvicorn api.main:app --reload  # modo real (PowerShell); precisa das tomografias
-python -m pytest                                   # testes da API
+$env:API_MODO="precalculado"; uvicorn api.main:app   # resultados reais salvos: use este na demonstração
+$env:API_MODO="real"; uvicorn api.main:app           # modelos rodando ao vivo; precisa das tomografias
+uvicorn api.main:app                                 # modo fixo: valores INVENTADOS, só para testar a tela
+python -m pytest                                     # testes da API
 ```
+- **Modo pré-calculado** (`precalculado`): 3 exames reais do Teste A (o pior caso do
+  baseline, o pior caso do region growing e um caso típico), processados pelo mesmo código
+  do relatório e pela U-Net oficial. Os Dice batem com os CSVs do artigo. A resposta é
+  instantânea e não precisa do HD.
+  - Os resultados estão em `pji/api/resultados_precalculados/`.
+  - Para gerar de novo, com os subsets 0 e 1 em `data/luna16/`:
+    `python api/gerar_precalculados.py`.
 - A documentação interativa fica em http://127.0.0.1:8000/docs.
 - No modo real, os três métodos são **os mesmos do relatório**: um teste confere que o
   código da API é idêntico ao de `src/luna16/`.

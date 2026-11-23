@@ -1,0 +1,26 @@
+[
+  {
+    "id": "teste-a-808059",
+    "nome": "Exame teste-a-808059 (Teste A, pior caso do baseline)",
+    "uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.109002525524522225658609808059",
+    "num_fatias": 201,
+    "fatia_exemplo": 61,
+    "baixado": true
+  },
+  {
+    "id": "teste-a-831276",
+    "nome": "Exame teste-a-831276 (Teste A, pior caso do region growing)",
+    "uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.503980049263254396021509831276",
+    "num_fatias": 282,
+    "fatia_exemplo": 154,
+    "baixado": true
+  },
+  {
+    "id": "teste-a-421281",
+    "nome": "Exame teste-a-421281 (Teste A, caso típico)",
+    "uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.525937963993475482158828421281",
+    "num_fatias": 322,
+    "fatia_exemplo": 89,
+    "baixado": true
+  }
+]
