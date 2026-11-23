@@ -62,6 +62,7 @@ dela. Nos **99 exames em comum** (R5b), a comparação justa é 0,9841 × 0,9834
 | H7 | U-Net 2D antiga | Teste A (26) | exame | treino em GPU, pós-processamento do Colab | Dice | 0,9827 (IoU 0,9661) | — | — | `491233c` | `sprint_unet_test.csv` (26 linhas, na raiz naquele commit) e resumo expandido | Substituído por H5 |
 | H8 | U-Net 2D antiga | 99 exames da fase 2 | exame | — | Dice | 0,9772 | — | 0,8268 | — | Slide da Sprint 4 | Sem arquivo; não usar |
 | H9 | Region growing | Teste A (26) | exame | antes da correção da semente | Dice | 0,9065 | [0,8365; 0,9550] | 0,2263 | `4c33cbd` | idem | Substituído por H4 |
+| T1 | Baseline / Region growing / U-Net 2D nova (semente 123) | Teste A (26) | exame | código corrigido | Traqueia (rótulo 5) dentro da máscara, % do volume total | 88% / 84% / 7% (1.062 / 1.017 / 85 de 1.208 mL) | — | — | *(este commit)* | `docs/traqueia/traqueia_por_exame.csv` | Válido. A U-Net semente 123 não treinou com nenhum exame do Teste A |
 
 **Os três Dice da U-Net antiga viram um só, o H5 (0,9818).** São o mesmo modelo em três
 versões do código:

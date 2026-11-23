@@ -319,6 +319,9 @@ concentra onde os métodos clássicos falham:
   mais fácil (`docs/piores_casos/`). Essa análise da Sprint 4 é de antes das correções de
   26/10, e ainda não foi refeita no teste oficial.
 
+A U-Net também acerta onde o limiar não tem como acertar: ela deixa de fora 93% da
+traqueia, que o gabarito exclui, enquanto o baseline inclui 88% dela (seção 7).
+
 O mecanismo do erro clássico é a **omissão**. O parênquima denso, o volume parcial nas
 bordas e os nódulos colados na pleura ficam acima de −600 HU e são classificados como "não
 pulmão". O preenchimento de buracos não os recupera, porque um nódulo justapleural não é um
@@ -376,9 +379,19 @@ limitação do método, e por isso é preciso investigar antes de concluir.
   a máscara do LUNA16 marca gás do estômago ou do intestino como pulmão, e a rede está certa
   ([`docs/discordancia_unet/`](docs/discordancia_unet/)). Parte do que o Dice conta como erro
   é erro da referência.
+- **Traqueia:** o gabarito exclui a traqueia e as vias aéreas centrais (rótulo 5), e os
+  métodos clássicos as incluem, porque também são ar. Nos 26 exames do Teste A, a máscara
+  do baseline contém 88% do volume da traqueia (1.062 de 1.208 mL), e a do region growing,
+  84%. A U-Net contém só 7%: ela aprendeu com o gabarito a deixar a traqueia de fora.
+  - O erro quase não pesa no Dice, porque a traqueia é pequena perto do pulmão, mas é um
+    erro anatômico sistemático dos métodos clássicos.
+  - Não removemos a traqueia da predição clássica. Para isso, seria preciso um crescimento
+    de região a partir da traqueia, subtraído da máscara. Fonte:
+    `scripts/analise_traqueia.py` e `docs/traqueia/traqueia_por_exame.csv`.
+
+  ![Traqueia nos três métodos](docs/traqueia/traqueia_3_metodos.png)
 - **Viés de volume:** a inspeção de 12 exames mostrou que a predição do baseline fica, em
-  média, 5% abaixo do volume de referência (até 22%), e que a traqueia entra na predição em
-  todos os 12.
+  média, 5% abaixo do volume de referência (até 22%).
 - **Uma única fonte de dados:** todos os exames vêm do LIDC-IDRI. A generalização para
   outros tomógrafos e hospitais não foi testada.
 - **Hipóteses formalizadas depois dos primeiros resultados:** o teste de 107 exames inéditos
