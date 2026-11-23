@@ -101,8 +101,19 @@ Métricas por paciente: Dice, IoU, sensibilidade, precisão e tempo
 | `data/luna16/sprint4_baseline_test.csv`, `sprint4_region_growing_test.csv`, `sprint_unet_test.csv` (um paciente por linha) |
 | `kdd/etapa4_mineracao_reprodutibilidade.csv`: o script **reexecuta** os três métodos do zero e confere que o Dice bate com o salvo (tolerância 0,0001) |
 
-**Resultado:** a reexecução reproduz exatamente o Dice salvo nos três métodos
-(verificado em 16/11, já com as bibliotecas atualizadas).
+**Resultado:** a reexecução reproduz exatamente o Dice salvo nos três métodos. Isso foi
+verificado em 16/11 e de novo em 22/11, com as bibliotecas atualizadas (SimpleITK 2.5.8).
+
+**Teste novo (oficial, 107 exames).** O mesmo código também foi rodado nos 107 exames de
+`teste_interno` do `split_novo.csv` (commit `a0ca409`).
+- A U-Net usada é a **semente 123**, treinada nos 497 exames de treino da base de 888
+  (`pji/modelos/unet_seed123`).
+- Os volumes desses exames ficam no HD externo do Roger, por isso o script não os reexecuta.
+  A etapa 5 parte dos CSVs por exame já salvos:
+  `sprint4_baseline_test_novo.csv`, `sprint4_region_growing_test_novo.csv` e
+  `sprint_unet_test_novo.csv`.
+- **Nenhum dos 107 exames está entre os 177 da primeira fase.** Ou seja, o teste novo não
+  inclui o Teste A, que foi inspecionado nas correções de 26/10.
 
 ## 5. Interpretação e avaliação
 
@@ -117,9 +128,26 @@ Métricas por paciente: Dice, IoU, sensibilidade, precisão e tempo
 
 | Código | Evidência |
 |---|---|
-| [`src/luna16/hipotese.py`](../src/luna16/hipotese.py), [`scripts/run_final_results.py`](../scripts/run_final_results.py) | `kdd/etapa5_tabela_resultados.csv`, `kdd/etapa5_teste_hipoteses.csv`, `kdd/relatorio_kdd.md`, `data/luna16/grafico_dice_iou_final.png` |
+| [`src/luna16/hipotese.py`](../src/luna16/hipotese.py), [`scripts/run_final_results.py`](../scripts/run_final_results.py) | Teste novo: `kdd/etapa5_tabela_resultados_novo.csv`, `kdd/etapa5_teste_hipoteses_novo.csv`, `data/luna16/grafico_dice_iou_final_novo.png`. Teste A: `kdd/etapa5_tabela_resultados.csv`, `kdd/etapa5_teste_hipoteses.csv`, `data/luna16/grafico_dice_iou_final.png`. Os dois: `kdd/relatorio_kdd.md` |
 
-**Resultado:**
+**Resultado no teste novo (oficial, 107 exames):**
+
+| Método | Dice [IC95%] | IoU [IC95%] | Pior exame | Exames < 0,85 | Tempo por exame* |
+|---|---|---|---|---|---|
+| Baseline | 0,9492 [0,9336; 0,9604] | 0,9095 [0,8892; 0,9246] | 0,381 | 3 | 6,3 s |
+| Region growing | 0,9353 [0,9201; 0,9479] | 0,8855 [0,8645; 0,9034] | 0,530 | 6 | 8,0 s |
+| U-Net 2D (semente 123) | **0,9838** [0,9827; 0,9847] | **0,9681** [0,9660; 0,9698] | 0,955 | 0 | 7,1 s |
+
+\* Os tempos foram medidos na máquina do Roger e não se comparam com os do Teste A, que
+foram medidos em outra máquina e com outra rede.
+
+- **H1 confirmada:** os três métodos passam da meta.
+- **H2 refutada:** o region growing foi pior que o baseline: −0,0139 [−0,0282; −0,0004].
+  Ele foi melhor em só 15 dos 107 exames.
+- **H3 confirmada:** a U-Net supera os dois métodos clássicos em **todos os 107 exames**
+  (+0,0346 sobre o baseline e +0,0484 sobre o region growing).
+
+**Histórico: Teste A (26 exames, U-Net antiga treinada com 124 exames):**
 
 | Método | Dice [IC95%] | IoU [IC95%] | Tempo por exame |
 |---|---|---|---|
@@ -127,10 +155,7 @@ Métricas por paciente: Dice, IoU, sensibilidade, precisão e tempo
 | Region growing | 0,9354 [0,9006; 0,9582] | 0,8867 [0,8378; 0,9201] | 19 s |
 | U-Net 2D | 0,9818 [0,9790; 0,9843] | 0,9644 [0,9590; 0,9691] | 62 s (CPU) |
 
-- **H1 confirmada:** os três métodos passam da meta.
-- **H2 refutada:** o region growing foi pior que o baseline, não melhor.
-- **H3 confirmada:** a U-Net supera os dois métodos clássicos em todos os 26 exames, ao
-  custo de cerca de 4 vezes mais tempo.
+As três conclusões são as mesmas nos dois conjuntos.
 
 ## Referência
 

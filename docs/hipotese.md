@@ -17,9 +17,15 @@ só a densidade, deveria ganhar.
 ## Hipóteses testáveis
 
 A hipótese geral se divide em três hipóteses, cada uma com hipótese nula (H0) e
-alternativa (H1) explícitas. A unidade de análise é o **paciente** (Dice de cada um dos
-26 exames do conjunto de teste, split 70/15/15). Os três métodos são avaliados nos
-mesmos 26 exames, por isso os testes são pareados.
+alternativa (H1) explícitas. A unidade de análise é o **paciente**: o Dice de cada exame
+do conjunto de teste. Os três métodos são avaliados nos mesmos exames, por isso os testes
+são pareados.
+
+São dois conjuntos de teste (ver [`tabela_experimentos.md`](tabela_experimentos.md)):
+- o **teste novo**, com **107 exames**, é o **oficial**. Vem do `teste_interno` do
+  `split_novo.csv` (70/15/15 sobre os 710 exames que ficaram fora da primeira fase);
+- o **Teste A**, com 26 exames, é histórico. Vem do split 70/15/15 sobre os 177 exames da
+  primeira fase.
 
 | | H0 (nula) | H1 (alternativa) | De onde vem |
 |---|---|---|---|
@@ -30,9 +36,9 @@ mesmos 26 exames, por isso os testes são pareados.
 ### Como cada uma é testada
 
 - **Teste de Wilcoxon** (postos sinalizados), **unilateral**, nível de significância
-  α = 0,05. Usamos Wilcoxon e não o teste t porque, com 26 pacientes e casos extremos
-  (o region growing tem um exame com Dice 0,59), não dá para assumir que as diferenças
-  seguem uma distribuição normal.
+  α = 0,05. Usamos Wilcoxon e não o teste t porque há casos extremos (no teste novo, o
+  baseline tem um exame com Dice 0,38 e o region growing um com 0,53). Por isso, não dá
+  para assumir que as diferenças seguem uma distribuição normal.
   - H1: Wilcoxon de uma amostra sobre (Dice − meta).
   - H2 e H3: Wilcoxon pareado sobre (Dice do método B − Dice do método A), paciente a
     paciente.
@@ -43,9 +49,43 @@ mesmos 26 exames, por isso os testes são pareados.
 
 Código: [`src/luna16/hipotese.py`](../src/luna16/hipotese.py). Executado pela etapa 5 de
 [`scripts/pipeline_kdd.py`](../scripts/pipeline_kdd.py), que salva
-`data/luna16/kdd/etapa5_teste_hipoteses.csv`.
+`data/luna16/kdd/etapa5_teste_hipoteses_novo.csv` (teste novo) e
+`data/luna16/kdd/etapa5_teste_hipoteses.csv` (Teste A).
 
-## Resultado (26 exames de teste, código com as correções de 26/10)
+## Resultado no teste novo (oficial, 107 exames)
+
+U-Net semente 123, treinada nos 497 exames de treino. Fonte: os CSVs por exame do commit
+`a0ca409`.
+
+| Hipótese | Efeito observado [IC95%] | p (Holm) | Decisão |
+|---|---|---|---|
+| H1 — Baseline > 0,85 | Dice médio 0,9492 [0,9336; 0,9604] | 4,0 × 10⁻¹⁶ | **H0 rejeitada** |
+| H1 — Region growing > 0,85 | Dice médio 0,9353 [0,9201; 0,9479] | 1,1 × 10⁻¹⁴ | **H0 rejeitada** |
+| H1 — U-Net > 0,75 | Dice médio 0,9838 [0,9827; 0,9847] | 4,1 × 10⁻¹⁹ | **H0 rejeitada** |
+| H2 — Region growing > Baseline | Diferença −0,0139 [−0,0282; −0,0004] | 1,0 | **H0 não rejeitada**: o efeito é o **oposto** do previsto |
+| H3a — U-Net > Baseline | Diferença +0,0346 [+0,0238; +0,0496] | 2,7 × 10⁻¹⁹ | **H0 rejeitada** |
+| H3b — U-Net > Region growing | Diferença +0,0484 [+0,0362; +0,0631] | 2,7 × 10⁻¹⁹ | **H0 rejeitada** |
+
+**O teste novo confirma o que o Teste A tinha mostrado: as três decisões são as mesmas.**
+- **H1:** o limite inferior do IC95% do baseline é 0,93, bem acima da meta.
+- **H2:** o region growing foi melhor que o baseline em só 15 dos 107 exames. A perda
+  continua sendo de sensibilidade: 0,901 contra 0,934 do baseline. A precisão é até maior
+  (0,981 contra 0,968), ou seja, ele deixa pulmão de fora, mas não marca coisa errada.
+- **H3:** a U-Net vence os dois métodos clássicos em **todos os 107 exames** e nunca fica
+  abaixo da meta (pior exame: 0,955). Os clássicos têm exames que falham feio:
+  - no pior exame do baseline, o Dice é 0,381, com sensibilidade de 0,29 e precisão de
+    0,54. No mesmo exame, a U-Net tem 0,959;
+  - o pior exame do region growing tem Dice de 0,530, com sensibilidade de 0,36.
+- **Custo:** no teste novo, a diferença de tempo quase some. A U-Net leva 7,1 s por exame,
+  o baseline 6,3 s e o region growing 8,0 s.
+  - A rede nova é diferente da antiga, e os tempos foram medidos em outra máquina, que não
+    está registrada no CSV. Por isso, esses tempos não se comparam com os 62 s da U-Net
+    antiga.
+  - A parte "ao custo de mais tempo" da hipótese geral **não se confirma claramente** no
+    teste novo. Vale remedir os três métodos na mesma máquina antes de afirmar qualquer
+    coisa sobre custo.
+
+## Resultado no Teste A (histórico: 26 exames, código com as correções de 26/10)
 
 | Hipótese | Efeito observado [IC95%] | p (Holm) | Decisão |
 |---|---|---|---|
@@ -56,7 +96,7 @@ Código: [`src/luna16/hipotese.py`](../src/luna16/hipotese.py). Executado pela e
 | H3a — U-Net > Baseline | Diferença +0,0263 [+0,0176; +0,0378] | 3,0 × 10⁻⁸ | **H0 rejeitada** |
 | H3b — U-Net > Region growing | Diferença +0,0464 [+0,0254; +0,0790] | 3,0 × 10⁻⁸ | **H0 rejeitada** |
 
-### Interpretação
+### Interpretação (Teste A)
 
 - **H1 confirmada para os três métodos.** Até o método mais simples (limiar de −600 HU +
   morfologia) passa da meta de 0,85 com folga: o limite inferior do IC95% é 0,94. Isso
@@ -87,13 +127,15 @@ Código: [`src/luna16/hipotese.py`](../src/luna16/hipotese.py). Executado pela e
    SMART de setembro e feedback do Checkpoint 1). A redação formal de H0/H1 e a escolha
    do teste unilateral foram escritas em 16/11, **depois** dos resultados existirem. O
    relatório deve dizer isso; não é uma pré-registração.
-2. **Conjunto de teste inspecionado.** As correções de 26/10 (semente do region growing
-   e limpeza da U-Net) foram diagnosticadas olhando exames do conjunto de teste. Elas
-   corrigem defeitos com justificativa física, mas o ideal é confirmar as hipóteses num
-   conjunto que não foi inspecionado (a base de 888 exames, ver
-   [`base_oficial.md`](base_oficial.md)).
-3. **n = 26.** Os p-valores são muito pequenos, mas a generalização para outros
-   tomógrafos e hospitais não é testada aqui: todos os exames vêm do LIDC-IDRI.
+2. **Conjunto de teste inspecionado: resolvido em boa parte pelo teste novo.** As correções
+   de 26/10 (semente do region growing e limpeza da U-Net) foram diagnosticadas olhando
+   exames do Teste A.
+   - **Nenhum dos 107 exames do teste novo está entre os 177 da primeira fase**, e as três
+     decisões se repetem neles.
+   - Ainda falta o grupo confirmar que nenhum parâmetro foi ajustado olhando os 107.
+3. **Tamanho e origem da amostra.** O teste novo tem n = 107, contra 26 do Teste A. Mesmo
+   assim, todos os exames vêm do LIDC-IDRI, então a generalização para outros tomógrafos e
+   hospitais não é testada aqui.
 4. **Referência imperfeita.** O "gabarito" (máscaras `seg-lungs-LUNA16`) também é gerado
    por algoritmo; em alguns exames a U-Net discorda do gabarito e parece estar certa
    (ver [`discordancia_unet/`](discordancia_unet/)). Parte da diferença entre os métodos

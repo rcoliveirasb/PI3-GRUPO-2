@@ -84,7 +84,28 @@ a API dá **exatamente** o Dice e o número de voxels de
 - Exame da lista que não está no HD aparece com `baixado: false` e responde 409.
   Se o HD não estiver conectado, a API não sobe (mensagem clara); use `API_MODO=fixo`.
 
-#### Resultado nos 3 exames padrão (teste)
+#### Os métodos da API são os mesmos do artigo (desde 23/11/2026)
+
+O modo real chama `src/luna16/inference.inferir()`, que agora usa **o mesmo código dos
+experimentos do relatório**:
+- `baseline.py`, `region_growing.py` e `lung_air.py` são cópias idênticas de `src/luna16/`,
+  na raiz do repositório;
+- na U-Net, entra a mesma limpeza de componentes fora do tórax (`limpar_fora_do_torax`).
+
+Conferência em 5 exames do Teste A, rodando `inferir()` sobre o mesmo pré-processamento da
+API:
+- o Dice do baseline e do region growing é **idêntico** aos CSVs do artigo;
+- a máscara da U-Net é idêntica à de `segment_with_unet` da avaliação.
+
+Antes disso, a API usava uma implementação própria (`api/segmentation.py`), que dava
+números diferentes dos publicados. Por exemplo, o region growing dela dava Dice de ~0,98,
+contra ~0,93 do artigo. Isso faria a tela contradizer o relatório. O arquivo continua no
+repositório, mas o modo real não o usa mais.
+
+#### Resultado nos 3 exames padrão (implementação antiga, antes de 23/11)
+
+> Estes números são da implementação antiga (`api/segmentation.py`) e **não** são os do
+> artigo. Com o HD conectado, rode de novo e substitua a tabela.
 
 | exame | método | Dice | IoU | volume (mL) |
 |---|---|---|---|---|
@@ -249,7 +270,8 @@ regenerar: `python api/gerar_dados_exemplo.py`.
 | `api/servicos/fixo.py` | modo fixo |
 | `api/servicos/real.py` | modo real: exames carregados na subida, métricas, cache |
 | `api/servicos/dicom.py` | acha e lê a série DICOM e a máscara do LUNA16 no HD |
-| `api/segmentation.py` | baseline e region growing |
+| `api/segmentation.py` | baseline e region growing **antigos** (não usados pelo modo real desde 23/11) |
+| `src/luna16/baseline.py`, `region_growing.py`, `lung_air.py` | cópias idênticas dos métodos do artigo (`src/luna16/` da raiz) |
 | `src/luna16/preprocessing.py` | pré-processamento do treino (HU, gaussiano, 1 mm) |
 | `src/luna16/inference.py` | `inferir()`: único ponto que chama os três métodos; carrega a U-Net |
 | `src/luna16/unet.py` | `SmallUNet2D` (pesos do HD) e a `UNet` antiga de `api/treinar_unet.py` |

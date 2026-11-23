@@ -22,6 +22,11 @@ salva a evidencia de cada etapa em data/luna16/kdd/:
   5. Interpretacao/Avaliacao -> etapa5_tabela_resultados.csv,
      etapa5_teste_hipoteses.csv, relatorio_kdd.md
      IC95% por bootstrap e teste formal das hipoteses (docs/hipotese.md).
+     A etapa 5 tambem roda no TESTE NOVO (107 exames de teste_interno do
+     split_novo), o conjunto oficial, a partir dos CSVs *_novo.csv ja salvos
+     -> etapa5_tabela_resultados_novo.csv, etapa5_teste_hipoteses_novo.csv.
+     Os volumes desses 107 exames ficam no HD externo, por isso as etapas 1
+     a 4 continuam sobre os 177 exames locais (Teste A, 26 exames).
 
 Uso (a partir da raiz do repositorio):
   python scripts/pipeline_kdd.py
@@ -64,6 +69,9 @@ from run_final_results import carregar_resultados, montar_tabela
 DATA_DIR = Path("data/luna16")
 SAIDA = DATA_DIR / "kdd"
 SPLIT = DATA_DIR / "split_full.csv"
+SPLIT_NOVO = DATA_DIR / "split_novo" / "split_novo.csv"  # teste oficial: 107 exames
+CONJUNTO_NOVO = "teste_interno"
+SUFIXO_NOVO = "_novo"
 CHECKPOINT = DATA_DIR / "unet_baseline.pt"
 TOLERANCIA_DICE = 1e-4  # reexecucao x valor salvo
 
@@ -193,33 +201,58 @@ def etapa4_mineracao(test_uids: list[str], n_reexecutar: int) -> tuple[dict, dic
     return resumo, dfs
 
 
-def etapa5_interpretacao(dfs: dict) -> dict:
-    t0 = titulo(5, "INTERPRETACAO / AVALIACAO")
+def etapa5_interpretacao(dfs: dict, sufixo: str = "", rotulo: str = "Teste A, 26 exames") -> dict:
+    t0 = titulo(5, f"INTERPRETACAO / AVALIACAO ({rotulo})")
     tabela = montar_tabela(dfs)
-    tabela.to_csv(SAIDA / "etapa5_tabela_resultados.csv")
+    tabela.to_csv(SAIDA / f"etapa5_tabela_resultados{sufixo}.csv")
     print(tabela[["Dice", "IoU", "Tempo/TC (s)"]].to_string(), "\n")
 
     hip = testar_hipoteses(dfs)
-    hip.to_csv(SAIDA / "etapa5_teste_hipoteses.csv", index=False)
+    hip.to_csv(SAIDA / f"etapa5_teste_hipoteses{sufixo}.csv", index=False)
     for _, l in hip.iterrows():
         print(f"{l['hipotese']:22s} H1: {l['h1']}")
         print(f"{'':22s} efeito={l['efeito']:+.4f} IC95%=[{l['ic95_inferior']:+.4f}, {l['ic95_superior']:+.4f}]  "
               f"p(Holm)={l['p_valor_holm']:.2e}  -> {l['conclusao']}")
     print(f"({time.time() - t0:.0f}s)")
-    return {"tabela": tabela, "hipoteses": hip}
+    return {"tabela": tabela, "hipoteses": hip, "n": len(next(iter(dfs.values())))}
 
 
-def escrever_relatorio(r1: dict, r23: dict, r4: dict, r5: dict) -> None:
-    hip = r5["hipoteses"]
+def etapa5_teste_novo() -> dict | None:
+    """Etapa 5 no teste oficial (107 exames), a partir dos CSVs ja salvos."""
+    try:
+        dfs = carregar_resultados(SPLIT_NOVO, CONJUNTO_NOVO, SUFIXO_NOVO)
+    except (FileNotFoundError, AssertionError) as erro:
+        print(f"AVISO: teste novo nao avaliado ({erro})")
+        return None
+    return etapa5_interpretacao(dfs, SUFIXO_NOVO, f"teste novo, {len(dfs['baseline'])} exames")
+
+
+def _secao_interpretacao(r5: dict) -> str:
+    linhas_tab = "\n".join(
+        f"| {m} | {row['Dice']} | {row['IoU']} | {row['Tempo/TC (s)']} |" for m, row in r5["tabela"].iterrows()
+    )
     linhas_hip = "\n".join(
         f"| {l.hipotese} | {l.h1} | {l.efeito:.4f} [{l.ic95_inferior:.4f}; {l.ic95_superior:.4f}] "
         f"| {l.p_valor_holm:.2e} | {l.conclusao} |"
-        for l in hip.itertuples()
+        for l in r5["hipoteses"].itertuples()
     )
-    tab = r5["tabela"]
-    linhas_tab = "\n".join(
-        f"| {m} | {row['Dice']} | {row['IoU']} | {row['Tempo/TC (s)']} |" for m, row in tab.iterrows()
-    )
+    return f"""| Metodo | Dice [IC95%] | IoU [IC95%] | Tempo/TC (s) |
+|---|---|---|---|
+{linhas_tab}
+
+Teste das hipoteses (Wilcoxon unilateral pareado, Holm, alfa = 0,05):
+
+| Hipotese | H1 | Efeito [IC95%] | p (Holm) | Conclusao |
+|---|---|---|---|---|
+{linhas_hip}"""
+
+
+def escrever_relatorio(r1: dict, r23: dict, r4: dict, r5: dict, r5_novo: dict | None) -> None:
+    if r5_novo is None:
+        secao_novo = "Nao avaliado: faltam os CSVs `*_novo.csv` ou o `split_novo.csv`."
+    else:
+        secao_novo = (f"Conjunto oficial: {r5_novo['n']} exames de `teste_interno` (`split_novo.csv`), "
+                      f"U-Net semente 123.\n\n" + _secao_interpretacao(r5_novo))
     pre, tr = r23["pre_processamento"], r23["transformacao"]
     md = f"""# Relatorio do pipeline KDD (gerado automaticamente)
 
@@ -251,15 +284,13 @@ Figura: `etapa2_3_preprocessamento_transformacao.png`
 
 ## 5. Interpretacao / avaliacao
 
-| Metodo | Dice [IC95%] | IoU [IC95%] | Tempo/TC (s) |
-|---|---|---|---|
-{linhas_tab}
+### 5a. Teste novo (oficial)
 
-### Teste das hipoteses (Wilcoxon unilateral pareado, Holm, alfa = 0,05)
+{secao_novo}
 
-| Hipotese | H1 | Efeito [IC95%] | p (Holm) | Conclusao |
-|---|---|---|---|---|
-{linhas_hip}
+### 5b. Teste A ({r5['n']} exames, historico)
+
+{_secao_interpretacao(r5)}
 """
     (SAIDA / "relatorio_kdd.md").write_text(md, encoding="utf-8")
 
@@ -277,7 +308,8 @@ def main():
     r23 = etapas2_3_preprocessamento_transformacao(test_uids[0])
     r4, dfs = etapa4_mineracao(test_uids, args.reexecutar)
     r5 = etapa5_interpretacao(dfs)
-    escrever_relatorio(r1, r23, r4, r5)
+    r5_novo = etapa5_teste_novo()
+    escrever_relatorio(r1, r23, r4, r5, r5_novo)
     print(f"\nKDD CONCLUIDO em {time.time() - t0:.0f}s. Saidas em {SAIDA}/ (ver relatorio_kdd.md)")
 
 
