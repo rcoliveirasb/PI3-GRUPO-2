@@ -1,7 +1,7 @@
 numpy==2.5.5
 matplotlib==3.11.2
 pydicom==3.0.2
-SimpleITK==2.5.7
+SimpleITK==2.5.8
 scikit-learn==1.9.1
 requests==2.34.2
 pandas==3.1.1
