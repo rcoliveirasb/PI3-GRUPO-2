@@ -404,7 +404,7 @@ mas não substitui esse especialista nem decide diagnóstico sozinho.
 
 ---
 
-*Rascunho gerado com apoio de Claude Code a partir dos resultados reais dos
+*Rascunho escrito a partir dos resultados reais dos
 notebooks `sprint3_baseline_luna16_grp2.ipynb` a `sprint6_resultados_finais_grp2.ipynb`.
 Revisar, personalizar e validar cada afirmação antes da entrega — o grupo precisa
 conseguir defender todo o conteúdo na banca.*
