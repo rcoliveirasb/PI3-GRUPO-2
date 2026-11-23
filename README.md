@@ -124,7 +124,7 @@ python -m pytest                                     # testes da API
 - **Base completa (888 exames):** baixe os subsets de 0 a 9 com o mesmo script, ou use a cópia
   do grupo no Google Drive: `backup_ct_preparados.zip` (exames pré-processados),
   `backup_mascaras.zip` (máscaras) e `backup_modelos_pesos.zip` (divisões e pesos das duas
-  sementes). [LINK DO DRIVE]
+  sementes), na [pasta compartilhada do grupo](https://drive.google.com/drive/folders/1FcWoRA4wSeGs4lUr_ZM628Ic9JkJSWz3).
 - **Pesos da U-Net oficial** (semente 123): já estão no repositório, em
   `pji/modelos/unet_seed123/unet_novo_final.pt`.
 
