@@ -1,112 +1,124 @@
 # Contrato da API (Pulmo Scan)
 
-Formato combinado entre a API (Rafael), a tela (Ruan e Herbe) e a inferência (Roger). Pedido
-na orientação 5 do feedback da Sprint 4: com o formato por escrito, a tela e a API avançam
-sem esperar uma pela outra. **Se algo aqui mudar, quem mudou atualiza este arquivo e avisa
-os outros dois.**
+Formato da comunicação entre a API de segmentação (`pji/api/`) e a tela (Pulmo Scan).
+Este documento descreve **o que a API implementada faz hoje**: cada exemplo abaixo é uma
+resposta real dela. Os testes automáticos de `pji/api/tests/test_contrato.py` conferem esse
+formato.
 
-## Meta mínima antes do Checkpoint 3
-
-Escolher um exame → a API devolve as três máscaras → a tela mostra os três métodos lado a
-lado.
-
-Pode começar com **valores fixos**: um exame de demonstração e algumas fatias salvas em
-arquivo. Os dados reais entram depois sem mudar o formato.
+> **Histórico.** A versão 1.0 deste contrato (26/10/2026) foi o plano inicial, com as rotas
+> `GET /exames/{uid}/fatias/{z}` e imagens em base64. A API acabou implementada de outro jeito
+> (uma rota por método e imagens PNG servidas por URL), e o documento não foi atualizado na
+> época. Esta versão 2.0 (23/11/2026) descreve a API real.
 
 ## Convenções
 
-- **Base:** `http://localhost:8000`. Tudo em JSON, UTF-8, nomes de campo em português sem
-  acento.
-- **Fatia:** corte axial no espaço já reamostrado para 1 mm isotrópico, o mesmo do pipeline
-  (`run_pipeline_for_uid`). `z` vai de `0` a `n_fatias - 1`, de baixo (pés) para cima
-  (cabeça).
-- **Imagens:** PNG em base64, sem o prefixo `data:`.
-  - TC: tons de cinza em janela de pulmão, de −1000 a 400 HU, como `normalize_for_display`.
-  - Máscaras: PNG de 1 canal, 0 = fora e 255 = pulmão, do mesmo tamanho da TC.
-- **Métodos:** `baseline`, `region_growing`, `unet`. A `referencia` (máscara do LUNA16)
-  também vem, para a tela poder mostrar onde cada método erra.
-- **Dice:** é o Dice **do exame inteiro**, lido dos CSVs de avaliação, e não calculado na
-  fatia. A tela deve escrever "Dice do exame".
+- **Endereço:** `http://localhost:8000`. A tela lê o endereço da variável `VITE_API_URL`.
+- **Formato:** JSON em UTF-8, com nomes de campo em português sem acento. Só há rotas `GET`.
+- **CORS:** liberado para qualquer origem, porque a tela roda em outra porta (5173).
+- **Fatia:** corte axial do volume já reamostrado para 1 mm isotrópico, o mesmo do pipeline do
+  artigo. Cada exame tem uma fatia de exemplo (`fatia_exemplo`).
+- **Imagens:** PNG em tons de cinza, de 8 bits, servidos por URL.
+  - **Tomografia:** janela de −1000 a 400 HU.
+  - **Máscara:** 0 = fora do pulmão e 255 = pulmão. Tem o mesmo tamanho da fatia.
+- **Métodos:** `baseline`, `region_growing` e `unet`. São **os mesmos do artigo**: o modo real
+  usa cópias idênticas de `src/luna16/`, e um teste confere isso.
+- **Métricas:** são do **exame inteiro** (volume 3D), contra a máscara de referência do LUNA16
+  (rótulos 3 e 4). A tela deve escrever "Dice do exame".
 
-## Endpoints
+## Modos (variável `API_MODO`)
+
+| Modo | `modo` na resposta | De onde vêm os números | Uso |
+|---|---|---|---|
+| `precalculado` | `pre_calculado` | Resultados **reais** de 3 exames do Teste A, salvos em `pji/api/resultados_precalculados/` | **Demonstração e vídeo** |
+| `real` | `modelo_real` | Os três métodos rodando ao vivo sobre os DICOM do HD | Uso completo (precisa do HD) |
+| `fixo` (padrão) | `valores_fixos` | Valores **inventados** de `pji/api/dados_exemplo/` | Só para desenvolver a tela |
+
+A tela mostra o modo para quem está vendo saber de onde vêm os números.
+
+## Rotas
 
 ### `GET /saude`
 
 ```json
-{"status": "ok", "versao_contrato": "1.0"}
+{"status": "ok", "modo": "pre_calculado"}
 ```
 
 ### `GET /exames`
 
-Lista os exames de demonstração.
-
-```json
-[
-  {
-    "uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.109002525524522225658609808059",
-    "rotulo": "Pior caso do baseline",
-    "conjunto": "Teste A",
-    "n_fatias": 312
-  }
-]
-```
-
-### `GET /exames/{uid}`
-
-Resumo do exame, com o Dice de cada método.
+Lista os exames disponíveis.
 
 ```json
 {
-  "uid": "1.3.6...808059",
-  "rotulo": "Pior caso do baseline",
-  "conjunto": "Teste A",
-  "n_fatias": 312,
-  "largura": 340,
-  "altura": 260,
-  "dice_exame": {"baseline": 0.8468, "region_growing": 0.7790, "unet": 0.9671}
+  "exames": [
+    {
+      "id": "teste-a-808059",
+      "nome": "Exame teste-a-808059 (Teste A, pior caso do baseline)",
+      "num_fatias": 201,
+      "fatia_exemplo": 61,
+      "baixado": true
+    }
+  ]
 }
 ```
 
-### `GET /exames/{uid}/fatias/{z}`
+- `baixado: false` indica, no modo real, um exame da lista que não está no HD.
+- No modo pré-calculado, cada exame também traz o `uid` (SeriesInstanceUID do LUNA16).
 
-Uma fatia com a TC e as quatro máscaras. É o que a tela chama ao mover o seletor de fatia.
+### `GET /exames/{id}/segmentacao/{metodo}`
+
+Segmenta o exame com um método e devolve as métricas e os endereços das imagens. No modo
+real, a primeira chamada calcula, o que leva segundos, e as seguintes vêm do cache.
 
 ```json
 {
-  "uid": "1.3.6...808059",
-  "z": 156,
-  "tc_png": "<base64>",
-  "mascaras_png": {
-    "referencia": "<base64>",
-    "baseline": "<base64>",
-    "region_growing": "<base64>",
-    "unet": "<base64>"
+  "exame_id": "teste-a-421281",
+  "metodo": "unet",
+  "modo": "pre_calculado",
+  "fatia": {"indice": 89, "largura": 420, "altura": 420, "url": "/exames/teste-a-421281/fatia.png"},
+  "mascara": {"largura": 420, "altura": 420, "url": "/exames/teste-a-421281/segmentacao/unet/mascara.png"},
+  "metricas": {
+    "dice": 0.9888,
+    "iou": 0.9779,
+    "precisao": 0.9867,
+    "revocacao": 0.991,
+    "volume_pulmonar_ml": 7604.0,
+    "tempo_ms": 11384
   }
 }
 ```
 
-### Erros
+- `revocacao` é a sensibilidade.
+- `tempo_ms` é o tempo da segmentação do exame inteiro. No modo pré-calculado, é o tempo
+  medido quando os resultados foram gerados.
+- As URLs são relativas ao endereço da API.
 
-Código HTTP mais JSON `{"erro": "<mensagem>"}`:
-- `404`: exame ou fatia inexistente;
-- `500`: falha na inferência.
+### `GET /exames/{id}/fatia.png`
 
-## Quem faz o quê
+A fatia de exemplo da tomografia, em PNG.
 
-| Parte | Responsável | Começa com |
+### `GET /exames/{id}/segmentacao/{metodo}/mascara.png`
+
+A máscara do método nessa fatia, em PNG.
+
+## Erros
+
+Os erros vêm com o código HTTP e um JSON neste formato:
+
+```json
+{"detail": {"codigo": "exame_inexistente", "mensagem": "Exame 'x' não existe. Use GET /exames para ver os disponíveis."}}
+```
+
+| HTTP | `codigo` | Quando |
 |---|---|---|
-| API (FastAPI) com estes endpoints | Rafael | Valores fixos: um exame, algumas fatias em PNG salvas em pasta |
-| Tela consumindo estes endpoints | Ruan e Herbe | Um JSON de exemplo copiado deste arquivo, sem esperar a API |
-| Inferência real (`src/luna16/inference.py`) que gera TC e máscaras de uma fatia | Roger | Funções que já existem: `segment_baseline`, `segment_region_growing`, `segment_with_unet` |
-| Exames de demonstração (incluindo um caso de falha) | Herbe | Exames já analisados em `docs/piores_casos/` |
+| 404 | `exame_inexistente` | O `id` não está na lista de `GET /exames` |
+| 400 | `metodo_invalido` | O método não é `baseline`, `region_growing` nem `unet` |
+| 409 | `exame_nao_baixado` | Modo real: o exame está na lista, mas não no HD |
 
-**Evidência para a próxima sprint** (pedido do professor ao Rafael): um print da API
-respondendo `GET /exames/{uid}/fatias/{z}`, mesmo com valores fixos.
+## Quem fez o quê
 
-## Dúvidas em aberto
-
-- **Desempenho:** gerar as três máscaras de um exame leva de ~10 a ~25 s por método em CPU.
-  Sugestão: pré-calcular as máscaras dos exames de demonstração e servir do disco, em vez de
-  segmentar a cada pedido.
-- **U-Net:** qual a API vai servir, a antiga (`unet_baseline.pt`, 124 exames) ou a nova (479
-  exames)? Depende de os pesos novos estarem no repositório.
+| Parte | Quem |
+|---|---|
+| API (FastAPI), modos fixo e real, testes | Rafael |
+| Tela (React + Vite) | Érica |
+| Ligação da tela com a API, modo pré-calculado e métodos da API iguais aos do artigo | Amabilly |
+| U-Net oficial (semente 123) usada pela API | Roger |
