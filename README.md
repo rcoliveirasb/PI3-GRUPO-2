@@ -339,9 +339,6 @@ registrados no GitHub. A `main` é a versão de entrega.
   - [0002 — Linguagem e frameworks](docs/adr/0002-linguagem-e-frameworks.md)
   - [0003 — Armazenamento em arquivos, sem banco de dados](docs/adr/0003-armazenamento-em-arquivos.md)
   - [0004 — Execução local, treino no Colab e modos da API](docs/adr/0004-execucao-e-hospedagem.md)
-  - [0005 — Divisão dos dados por paciente](docs/adr/0005-divisao-por-paciente.md)
-  - [0006 — U-Net 2D como método aprendido](docs/adr/0006-unet-2d.md)
-  - [0007 — Avaliação estatística](docs/adr/0007-avaliacao-estatistica.md)
 
 **Do projeto**
 - [`DEFINICAO_DO_PROBLEMA.md`](DEFINICAO_DO_PROBLEMA.md): pergunta SMART e métricas.
