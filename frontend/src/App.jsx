@@ -1,5 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
+import { API_URL, METODOS, NOMES_MODO, listarExames, segmentarTodos, verificarApi } from './api'
+import Sobreposicao from './Sobreposicao'
+
+function formatar(numero, casas = 3) {
+  return Number(numero).toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas })
+}
 
 const pacientesIniciais = [
   { id: 1, nome: 'Maria Silva', peso: '65', observacoes: 'Acompanhamento de rotina', exames: [
@@ -33,6 +39,19 @@ function App() {
   const [observacoesNovoPaciente, setObservacoesNovoPaciente] = useState('')
   const [mensagem, setMensagem] = useState('')
   const inputArquivoRef = useRef(null)
+  // Conexão com a API de segmentação
+  const [examesApi, setExamesApi] = useState([])
+  const [estadoApi, setEstadoApi] = useState({ conectada: false, modo: null, erro: null })
+  const [segmentando, setSegmentando] = useState(false)
+
+  useEffect(() => {
+    Promise.all([verificarApi(), listarExames()])
+      .then(([saude, exames]) => {
+        setEstadoApi({ conectada: true, modo: saude.modo, erro: null })
+        setExamesApi(exames.filter(e => e.baixado !== false))
+      })
+      .catch(() => setEstadoApi({ conectada: false, modo: null, erro: `API fora do ar em ${API_URL}` }))
+  }, [])
 
   const pacienteAtivo = pacientes.find(p => p.id === pacienteAtivoId) ?? pacientes.find(p => abasAbertas.includes(p.id)) ?? null
   const exameAtivo = pacienteAtivo ? (pacienteAtivo.exames.find(e => e.id === pacienteAtivo.exameAtivoId) ?? pacienteAtivo.exames[0]) : null
@@ -44,6 +63,46 @@ function App() {
       ...p,
       exames: p.exames.map(e => e.id === exameAtivo.id ? { ...e, ...mudancas } : e),
     }))
+  }
+
+  // Atualiza um exame pelos ids (seguro depois de um await, mesmo se o usuário trocou de aba)
+  function atualizarExame(pacienteId, exameId, mudancas) {
+    setPacientes(atuais => atuais.map(p => p.id !== pacienteId ? p : {
+      ...p,
+      exames: p.exames.map(e => e.id === exameId ? { ...e, ...mudancas } : e),
+    }))
+  }
+
+  function escolherExameApi(exameApiId) {
+    atualizarExameAtual({
+      exameApiId: exameApiId || null,
+      resultado: null,
+      status: exameApiId ? 'Tomografia selecionada' : 'Aguardando arquivo',
+      fatia: 1,
+    })
+    setMensagem('')
+  }
+
+  async function iniciarSegmentacao() {
+    if (!exameAtivo?.exameApiId) {
+      setMensagem('Escolha uma tomografia do servidor. O envio de arquivos próprios ainda não é processado pela API.')
+      return
+    }
+    const pacienteId = pacienteAtivo.id
+    const exameId = exameAtivo.id
+    setSegmentando(true)
+    atualizarExame(pacienteId, exameId, { status: 'Segmentando...' })
+    setMensagem('Rodando baseline, region growing e U-Net...')
+    try {
+      const resultado = await segmentarTodos(exameAtivo.exameApiId)
+      atualizarExame(pacienteId, exameId, { resultado, status: 'Segmentação concluída', fatia: resultado.fatia.indice })
+      setMensagem('Segmentação concluída: os três métodos lado a lado.')
+    } catch (erro) {
+      atualizarExame(pacienteId, exameId, { status: 'Erro na segmentação' })
+      setMensagem(`Não foi possível segmentar: ${erro.message}`)
+    } finally {
+      setSegmentando(false)
+    }
   }
 
   function atualizarPacienteAtual(campo, valor) {
@@ -135,9 +194,14 @@ function App() {
       paciente: { nome: pacienteAtivo.nome, peso: pacienteAtivo.peso, observacoes: pacienteAtivo.observacoes },
       exame: {
         nome: exameAtivo.nome, data: exameAtivo.data, arquivo: exameAtivo.arquivo?.name ?? null,
-        status: exameAtivo.status, fatia: exameAtivo.fatia, resultadosSegmentacao: null,
+        status: exameAtivo.status, fatia: exameAtivo.fatia,
+        tomografiaServidor: exameAtivo.exameApiId ?? null,
+        resultadosSegmentacao: exameAtivo.resultado
+          ? Object.fromEntries(Object.entries(exameAtivo.resultado.metodos).map(([m, r]) => [m, r.metricas]))
+          : null,
       },
-      aviso: 'Demonstração: resultados reais dependem da integração com o backend.',
+      origemDosResultados: estadoApi.modo ? NOMES_MODO[estadoApi.modo] ?? estadoApi.modo : null,
+      aviso: 'Protótipo acadêmico. Não é um dispositivo médico e não deve ser usado para diagnóstico.',
     }
     const blob = new Blob([JSON.stringify(resultado, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -146,7 +210,7 @@ function App() {
     link.download = `${pacienteAtivo.nome.replace(/\s+/g, '_')}_${exameAtivo.nome}.json`
     link.click()
     URL.revokeObjectURL(url)
-    setMensagem('Resumo demonstrativo salvo em JSON.')
+    setMensagem(exameAtivo.resultado ? 'Resultado salvo em JSON.' : 'Resumo salvo em JSON (ainda sem segmentação).')
   }
 
   return (
@@ -197,7 +261,10 @@ function App() {
           <div className="popover-cabecalho"><div><h2>Configurações</h2><p>Preferências da interface</p></div><button className="fechar-popover" onClick={() => setConfigAberta(false)} aria-label="Fechar">×</button></div>
           <div className="config-item"><span>Tema</span><strong>Escuro</strong></div>
           <div className="config-item"><span>Dataset de referência</span><strong>LUNA16</strong></div>
-          <p className="config-aviso">As configurações clínicas e de processamento serão definidas na integração com o backend.</p>
+          <div className="config-item"><span>API</span><strong>{API_URL}</strong></div>
+          <div className="config-item"><span>Conexão</span><strong>{estadoApi.conectada ? 'Conectada' : 'Desconectada'}</strong></div>
+          <div className="config-item"><span>Origem dos resultados</span><strong>{estadoApi.modo ? NOMES_MODO[estadoApi.modo] ?? estadoApi.modo : '—'}</strong></div>
+          <p className="config-aviso">Protótipo acadêmico. Não é um dispositivo médico e não deve ser usado para diagnóstico.</p>
         </section>}
       </header>
 
@@ -212,12 +279,31 @@ function App() {
 
           <section className="painel resultados">
             <h2>Resultado da<br />segmentação:</h2>
-            <p><span>Área segmentada:</span><strong>— cm²</strong></p>
-            <p><span>Parênquima:</span><strong>—</strong></p>
-            <p><span>Fatias analisadas:</span><strong>—</strong></p>
-            <p className="tempo"><span>Tempo:</span><strong>— segundos</strong></p>
+            {exameAtivo.resultado ? <>
+              <table className="tabela-resultados">
+                <thead><tr><th>Método</th><th>Dice</th><th>IoU</th><th>Volume</th><th>Tempo</th></tr></thead>
+                <tbody>
+                  {METODOS.map(m => {
+                    const r = exameAtivo.resultado.metodos[m.id].metricas
+                    return <tr key={m.id}>
+                      <td><span className="ponto-cor" style={{ background: `rgb(${m.cor.join(',')})` }} />{m.nome}</td>
+                      <td>{formatar(r.dice)}</td><td>{formatar(r.iou)}</td>
+                      <td>{formatar(r.volume_pulmonar_ml / 1000, 2)} L</td>
+                      <td>{formatar(r.tempo_ms / 1000, 1)} s</td>
+                    </tr>
+                  })}
+                </tbody>
+              </table>
+              <p><span>Fatias do exame:</span><strong>{examesApi.find(e => e.id === exameAtivo.exameApiId)?.num_fatias ?? '—'}</strong></p>
+              <small className="nota-resultados">Dice e IoU do exame inteiro (3D), contra a máscara de referência do LUNA16.</small>
+            </> : <>
+              <p><span>Dice (exame inteiro):</span><strong>—</strong></p>
+              <p><span>Volume pulmonar:</span><strong>—</strong></p>
+              <p><span>Fatias do exame:</span><strong>—</strong></p>
+              <p className="tempo"><span>Tempo:</span><strong>— segundos</strong></p>
+            </>}
             <button className="botao-laranja" onClick={salvarResultado}>Salvar resultado</button>
-            <small>Resultados reais aparecerão após a integração do modelo.</small>
+            <small>{estadoApi.modo ? NOMES_MODO[estadoApi.modo] ?? estadoApi.modo : (estadoApi.erro ?? 'Conectando à API...')}</small>
           </section>
         </aside>
 
@@ -228,9 +314,14 @@ function App() {
               <span className="status">{exameAtivo.status}</span>
             </div>
             <div className="imagem-tomografia">
-              {exameAtivo.arquivo ? <div className="arquivo-carregado"><span className="simbolo-tomografia">▦</span><h3>Arquivo selecionado</h3><p>{exameAtivo.arquivo.name}</p><small>Visualização médica será conectada ao backend.</small></div> : <div className="mensagem-vazia"><span className="simbolo-tomografia">⌕</span><h3>Aguardando processamento</h3><p>Carregue uma tomografia para este exame</p></div>}
+              {exameAtivo.resultado ? <div className="grade-metodos">
+                {METODOS.map(m => <figure key={m.id} className="painel-metodo">
+                  <Sobreposicao fatiaUrl={exameAtivo.resultado.fatia.url} mascaraUrl={exameAtivo.resultado.metodos[m.id].mascaraUrl} cor={m.cor} titulo={`Máscara do ${m.nome}`} />
+                  <figcaption><span className="ponto-cor" style={{ background: `rgb(${m.cor.join(',')})` }} />{m.nome} · Dice {formatar(exameAtivo.resultado.metodos[m.id].metricas.dice)}</figcaption>
+                </figure>)}
+              </div> : exameAtivo.exameApiId ? <div className="arquivo-carregado"><span className="simbolo-tomografia">▦</span><h3>Tomografia do servidor selecionada</h3><p>{examesApi.find(e => e.id === exameAtivo.exameApiId)?.nome ?? exameAtivo.exameApiId}</p><small>Clique em “Iniciar segmentação”.</small></div> : exameAtivo.arquivo ?<div className="arquivo-carregado"><span className="simbolo-tomografia">▦</span><h3>Arquivo selecionado</h3><p>{exameAtivo.arquivo.name}</p><small>A API ainda não processa arquivos enviados: escolha uma tomografia do servidor ao lado.</small></div> : <div className="mensagem-vazia"><span className="simbolo-tomografia">⌕</span><h3>Aguardando processamento</h3><p>Carregue uma tomografia para este exame</p></div>}
             </div>
-            <div className="rodape-visualizador"><span>Dataset: LUNA16</span><span>{exameAtivo.data}</span><span>Fatia: {exameAtivo.fatia}</span></div>
+            <div className="rodape-visualizador"><span>Dataset: LUNA16</span><span>{exameAtivo.data}</span><span>Fatia: {exameAtivo.fatia}</span>{estadoApi.modo && <span className={`modo-api modo-${estadoApi.modo}`}>{NOMES_MODO[estadoApi.modo] ?? estadoApi.modo}</span>}</div>
           </section>
 
           <div className="area-inferior">
@@ -246,12 +337,18 @@ function App() {
             </div>
 
             <section className="painel upload">
+              <label className="escolha-servidor">Tomografia do servidor (LUNA16)
+                <select value={exameAtivo.exameApiId ?? ''} onChange={e => escolherExameApi(e.target.value)} disabled={!estadoApi.conectada}>
+                  <option value="">{estadoApi.conectada ? 'Escolha um exame...' : (estadoApi.erro ?? 'Conectando à API...')}</option>
+                  {examesApi.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                </select>
+              </label>
               <label htmlFor="arquivo" className="area-upload" onDragOver={e => e.preventDefault()} onDrop={soltarArquivo}>
                 <span className="mais-upload">+</span><strong>{exameAtivo.arquivo ? 'Arquivo selecionado' : 'Arraste a tomografia para esta área'}</strong><span>ou</span><small>{exameAtivo.arquivo ? exameAtivo.arquivo.name : 'Clique aqui para procurar o arquivo'}</small>
               </label>
               <input ref={inputArquivoRef} id="arquivo" type="file" accept=".mhd,.raw,.nii,.nii.gz,.dcm,.png,.jpg,.jpeg" onChange={selecionarArquivo} hidden />
               <button className="botao-laranja botao-upload" onClick={() => inputArquivoRef.current?.click()}>⇧ Fazer Upload</button>
-              <button className="botao-processar" disabled={!exameAtivo.arquivo} onClick={() => { atualizarExameAtual({ status: 'Pronto para integração com backend' }); setMensagem('A interface ainda não executa a segmentação real.') }}>Iniciar segmentação</button>
+              <button className="botao-processar" disabled={!exameAtivo.exameApiId || segmentando} onClick={iniciarSegmentacao}>{segmentando ? 'Segmentando...' : 'Iniciar segmentação'}</button>
             </section>
           </div>
 
