@@ -76,7 +76,7 @@ Siga os passos na ordem. Cada um diz o que precisa ter antes e quanto tempo leva
 | 1. Instalar | Ambiente Python com as versões congeladas | Python 3.11 ou mais novo (testado no 3.13) |
 | 2. Conferir os resultados | Recalcula a tabela oficial e os testes a partir dos CSVs do repositório | Só o passo 1 (não precisa das tomografias) |
 | 3. Rodar a API | Sobe a API que segmenta com os três métodos | Passo 1; para o modo real, as tomografias |
-| 4. Abrir a tela | Interface web que consome a API | [PENDENTE: o código do front-end ainda não está no repositório] |
+| 4. Abrir a tela | Interface web que consome a API | Node.js 20.19 ou 22.12 em diante (testado no 26) e a API rodando |
 | 5. Refazer tudo do zero | Baixa os dados, avalia os três métodos e roda o KDD | As tomografias (ver "Como obter os dados") |
 
 **1. Instalar**
@@ -118,13 +118,28 @@ python -m pytest                                     # testes da API
   código da API é idêntico ao de `src/luna16/`.
 - A pasta dos dados é definida pela variável `API_RAIZ_DATASET`.
 
+**4. Abrir a tela (Pulmo Scan).** Com a API do passo 3 rodando, em outro terminal:
+```
+cd frontend
+npm install        # só na primeira vez
+npm run dev        # abre em http://localhost:5173
+```
+- Em "Tomografia do servidor (LUNA16)", escolha um exame e clique em **Iniciar segmentação**.
+  A tela mostra os três métodos lado a lado, com a máscara sobre a fatia e a tabela de Dice,
+  IoU, volume e tempo do exame inteiro.
+- O selo no rodapé diz de onde vêm os números (modo da API). Na demonstração, use o modo
+  `precalculado`.
+- A tela procura a API em `http://localhost:8000`. Para outro endereço, defina `VITE_API_URL`.
+- A tela foi feita pela Érica (React + Vite). A ligação com a API está em
+  `frontend/src/api.js` e `frontend/src/Sobreposicao.jsx`.
+
 **Como obter os dados**
 - **Primeira fase (177 exames):** subsets 0 e 1 do LUNA16, pelo Kaggle (passo 4 de "Como rodar",
   abaixo).
 - **Base completa (888 exames):** baixe os subsets de 0 a 9 com o mesmo script, ou use a cópia
   do grupo no Google Drive: `backup_ct_preparados.zip` (exames pré-processados),
   `backup_mascaras.zip` (máscaras) e `backup_modelos_pesos.zip` (divisões e pesos das duas
-  sementes). [LINK DO DRIVE]
+  sementes), na [pasta compartilhada do grupo](https://drive.google.com/drive/folders/1FcWoRA4wSeGs4lUr_ZM628Ic9JkJSWz3).
 - **Pesos da U-Net oficial** (semente 123): já estão no repositório, em
   `pji/modelos/unet_seed123/unet_novo_final.pt`.
 

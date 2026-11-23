@@ -45,3 +45,7 @@ data/luna16/*
 
 # Arquivo local de contexto para a IA (nao versionar)
 PROJETO.md
+
+# Front-end (Node)
+frontend/node_modules/
+frontend/dist/

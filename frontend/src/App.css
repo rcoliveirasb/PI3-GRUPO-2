@@ -169,3 +169,21 @@ button:disabled { cursor: not-allowed; }
 .fechar-aba-paciente:hover {
   color: #ff6b35;
 }
+/* Integração com a API de segmentação */
+.grade-metodos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: 100%; }
+.painel-metodo { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0; }
+.sobreposicao-canvas { width: 100%; height: auto; max-height: 360px; object-fit: contain; border: 1px solid #333; border-radius: 4px; background: #000; }
+.painel-metodo figcaption { display: flex; align-items: center; gap: 6px; color: #ddd; font-size: 11px; }
+.ponto-cor { display: inline-block; flex: 0 0 9px; width: 9px; height: 9px; margin-right: 5px; border-radius: 50%; }
+.tabela-resultados { width: 100%; margin-bottom: 12px; border-collapse: collapse; font-size: 10px; }
+.tabela-resultados th { padding: 4px 3px; border-bottom: 1px solid #444; color: #aaa; font-weight: normal; text-align: right; }
+.tabela-resultados td { padding: 5px 3px; border-bottom: 1px solid #2c2c2c; text-align: right; white-space: nowrap; }
+.tabela-resultados th:first-child, .tabela-resultados td:first-child { text-align: left; }
+.resultados .nota-resultados { margin: 0 0 12px; text-align: left; }
+.escolha-servidor { display: flex; flex-direction: column; gap: 4px; width: 100%; margin-bottom: 8px; color: #bbb; font-size: 10px; }
+.escolha-servidor select { width: 100%; padding: 7px 8px; border: 1px solid #454545; border-radius: 5px; background: #151515; color: #fff; }
+.modo-api { padding: 1px 7px; border-radius: 10px; background: #333; color: #eee; }
+.modo-valores_fixos { background: #7a3b00; }
+.modo-pre_calculado { background: #1f4d33; }
+.modo-modelo_real { background: #1d3f66; }
+@media (max-width: 900px) { .grade-metodos { grid-template-columns: 1fr; } }
