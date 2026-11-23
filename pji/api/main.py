@@ -4,8 +4,9 @@ Subir, a partir da raiz do repositorio:
     uvicorn api.main:app --reload                       # API_MODO=fixo (padrao)
     API_MODO=real uvicorn api.main:app --reload         # modelos reais
 
-API_MODO=fixo  -> respostas inventadas de api/dados_exemplo/ (sem dados do LUNA16)
-API_MODO=real  -> api/servicos/real.py (U-Net e volumes carregados na subida)
+API_MODO=fixo         -> respostas inventadas de api/dados_exemplo/ (sem dados do LUNA16)
+API_MODO=precalculado -> resultados reais de api/resultados_precalculados/ (para a demonstracao)
+API_MODO=real         -> api/servicos/real.py (U-Net e volumes carregados na subida)
 """
 import os
 from contextlib import asynccontextmanager
@@ -24,11 +25,14 @@ def criar_servico():
     if modo == "fixo":
         from api.servicos.fixo import ServicoFixo
         return ServicoFixo()
+    if modo == "precalculado":
+        from api.servicos.fixo import ServicoPreCalculado
+        return ServicoPreCalculado()
     if modo == "real":
         # import aqui dentro: o modo fixo nao precisa de torch nem SimpleITK
         from api.servicos.real import ServicoReal
         return ServicoReal()
-    raise RuntimeError(f"API_MODO='{modo}' inválido. Use 'fixo' ou 'real'.")
+    raise RuntimeError(f"API_MODO='{modo}' inválido. Use 'fixo', 'precalculado' ou 'real'.")
 
 
 def obter_servico():

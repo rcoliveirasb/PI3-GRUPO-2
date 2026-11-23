@@ -1,0 +1,80 @@
+{
+  "teste-a-808059": {
+    "baseline": {
+      "dice": 0.8468,
+      "iou": 0.7343,
+      "precisao": 0.9778,
+      "revocacao": 0.7468,
+      "volume_pulmonar_ml": 1069.0,
+      "tempo_ms": 928
+    },
+    "region_growing": {
+      "dice": 0.779,
+      "iou": 0.638,
+      "precisao": 0.9787,
+      "revocacao": 0.6469,
+      "volume_pulmonar_ml": 925.3,
+      "tempo_ms": 1657
+    },
+    "unet": {
+      "dice": 0.9758,
+      "iou": 0.9527,
+      "precisao": 0.9786,
+      "revocacao": 0.973,
+      "volume_pulmonar_ml": 1391.7,
+      "tempo_ms": 6556
+    }
+  },
+  "teste-a-831276": {
+    "baseline": {
+      "dice": 0.86,
+      "iou": 0.7544,
+      "precisao": 0.982,
+      "revocacao": 0.7649,
+      "volume_pulmonar_ml": 2058.3,
+      "tempo_ms": 2125
+    },
+    "region_growing": {
+      "dice": 0.5941,
+      "iou": 0.4226,
+      "precisao": 0.9728,
+      "revocacao": 0.4276,
+      "volume_pulmonar_ml": 1161.5,
+      "tempo_ms": 2913
+    },
+    "unet": {
+      "dice": 0.972,
+      "iou": 0.9456,
+      "precisao": 0.9881,
+      "revocacao": 0.9565,
+      "volume_pulmonar_ml": 2558.3,
+      "tempo_ms": 9998
+    }
+  },
+  "teste-a-421281": {
+    "baseline": {
+      "dice": 0.964,
+      "iou": 0.9305,
+      "precisao": 0.9711,
+      "revocacao": 0.957,
+      "volume_pulmonar_ml": 7460.5,
+      "tempo_ms": 2805
+    },
+    "region_growing": {
+      "dice": 0.9523,
+      "iou": 0.909,
+      "precisao": 0.9717,
+      "revocacao": 0.9337,
+      "volume_pulmonar_ml": 7273.9,
+      "tempo_ms": 6053
+    },
+    "unet": {
+      "dice": 0.9888,
+      "iou": 0.9779,
+      "precisao": 0.9867,
+      "revocacao": 0.991,
+      "volume_pulmonar_ml": 7604.0,
+      "tempo_ms": 11384
+    }
+  }
+}
