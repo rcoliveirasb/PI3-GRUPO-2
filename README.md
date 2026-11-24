@@ -320,7 +320,7 @@ npm run dev
 | Amabilly Riva Dutra | Amabilly Riva Dutra (Mabynha20) | Coordenação (Trello) e arquitetura. Pipeline de segmentação em `src/luna16/` (baseline e region growing), avaliação com IC95% e teste pareado, processo KDD e hipóteses, ligação da tela com a API e modo pré-calculado, relatório final, resumo expandido e documentação |
 | Roger Caldeira de Oliveira | rcoliveirasb, Roger Oliveira | Dono do repositório. Download e guarda do LUNA16 completo (HD externo), migração para os 888 exames, treino da U-Net oficial com duas sementes, avaliação dos três métodos no teste de 107 exames e cópia dos dados no Google Drive |
 | Rafael Cassiano Manchini | rodyneyh | Pergunta SMART, definição do problema, README inicial e API (FastAPI) com os modos fixo e real |
-| Érica Souza | 11erica006, Erica souza | Telas no Figma e tela Pulmo Scan (React + Vite), slides da banca e comparação com a literatura |
+| Erica Souza Dos Santos | 11erica006, Erica souza | Telas no Figma e tela Pulmo Scan (React + Vite), slides da banca e comparação com a literatura |
 | Ruan Matheus de Souza | RuaanSouza | Análise dos piores casos dos três métodos, inspeção visual de exames e publicação da API no repositório |
 | Herbe Fragoso | herbefragoso | Análise dos piores casos, base e gabarito e escolha dos exames de demonstração |
 
