@@ -187,3 +187,5 @@ button:disabled { cursor: not-allowed; }
 .modo-pre_calculado { background: #1f4d33; }
 .modo-modelo_real { background: #1d3f66; }
 @media (max-width: 900px) { .grade-metodos { grid-template-columns: 1fr; } }
+.avisos-analise { grid-column: 1 / -1; margin: 4px 0 0; padding: 8px 12px 8px 26px; border-radius: 8px; background: rgba(255, 140, 0, 0.12); color: #f3c58a; font-size: 11px; text-align: left; }
+.avisos-analise li + li { margin-top: 3px; }

@@ -51,6 +51,7 @@ O que o sistema faz.
 | RF-16 | A API devolve a fatia de exemplo e a máscara de cada método em PNG. | Alta | `pji/api/main.py`, `pji/api/png.py` |
 | RF-17 | A API funciona em três modos, escolhidos pela variável `API_MODO`: `fixo`, `precalculado` e `real`. | Média | `pji/api/main.py`, `pji/api/servicos/` |
 | RF-18 | Quando o pedido é inválido, a API responde com um código HTTP e um JSON com `codigo` e `mensagem` (404 exame inexistente, 400 método inválido, 409 exame não baixado). | Média | `pji/api/erros.py` |
+| RF-26 | A API recebe uma fatia de tomografia enviada (`.png`, `.jpg` ou `.dcm`, até 30 MB) e roda os três métodos nela, ao vivo, com a U-Net treinada, em qualquer modo (`POST /analises`). Devolve as máscaras, a área de pulmão e o tempo, e Dice e IoU quando a fatia tem gabarito. | Alta | `pji/api/analise_upload.py`, `pji/api/main.py`, `docs/contrato_api.md` |
 
 ### Tela
 
@@ -62,6 +63,7 @@ O que o sistema faz.
 | RF-22 | A tela mostra um selo com o modo da API, para que valores inventados não sejam confundidos com resultados reais. | Alta | `frontend/src/App.jsx` |
 | RF-23 | O usuário pode salvar o resultado da segmentação em JSON. | Baixa | `frontend/src/App.jsx` |
 | RF-24 | A tela avisa quando a API está fora do ar ou quando a segmentação falha. | Média | `frontend/src/App.jsx` |
+| RF-27 | O usuário envia uma imagem de tomografia pela tela (botão ou arrastando) e vê os três métodos aplicados a ela, com os avisos da API sobre as suposições feitas. | Alta | `frontend/src/App.jsx`, `frontend/src/api.js` |
 
 ### Extensão
 
@@ -85,7 +87,7 @@ traz o valor obtido no projeto.
 | RNF-05 | **Sem GPU**: avaliação, API e tela rodam só com CPU. A GPU é usada apenas no treino da U-Net. | Alta | Atendido; treino no Google Colab |
 | RNF-06 | **Resposta da API** no modo `precalculado`: cada rota responde em até 1 s. | Média | No máximo 0,005 s em 21 requisições (cliente de teste, 23/11/2026) |
 | RNF-07 | **Estabilidade da U-Net**: a diferença de Dice entre duas sementes de treino é de no máximo 0,005. | Média | 0,9837 ± 0,0004 |
-| RNF-08 | **Testes da API**: 100% dos testes automáticos passam. Os que precisam das tomografias são pulados quando elas não estão na máquina. | Alta | 37 passaram e 5 foram pulados (pytest, 23/11/2026) |
+| RNF-08 | **Testes da API**: 100% dos testes automáticos passam. Os que precisam das tomografias são pulados quando elas não estão na máquina. | Alta | 42 passaram e 5 foram pulados (pytest, 28/11/2026) |
 | RNF-09 | **Versões congeladas**: 100% das bibliotecas Python do pipeline têm versão exata no `requirements.txt`, e as da tela estão travadas no `package-lock.json`. | Alta | Atendido |
 | RNF-10 | **Portabilidade**: roda no Windows, Linux e Mac, com Python 3.11 ou mais novo e Node.js 20.19, 22.12 ou mais novo. | Média | Testado no Windows 11 com Python 3.13 e Node.js 26 |
 | RNF-11 | **Instalação**: quem segue só o README tem a API e a tela no ar em até 15 min, sem precisar dos dados (modo `precalculado`). | Alta | Passos 4.1, 4.3 e 4.4 do README |

@@ -7,17 +7,24 @@ Subir, a partir da raiz do repositorio:
 API_MODO=fixo         -> respostas inventadas de api/dados_exemplo/ (sem dados do LUNA16)
 API_MODO=precalculado -> resultados reais de api/resultados_precalculados/ (para a demonstracao)
 API_MODO=real         -> api/servicos/real.py (U-Net e volumes carregados na subida)
+
+Em qualquer modo: POST /analises recebe uma fatia (.png, .jpg ou .dcm) e roda
+os tres metodos nela, com a U-Net treinada (ver api/analise_upload.py).
 """
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Response
+import threading
+
+from fastapi import Depends, FastAPI, File, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.erros import METODOS, metodo_invalido
 from api.png import largura_altura
 
 _servico = None
+_analisador = None
+_trava_analisador = threading.Lock()
 
 
 def criar_servico():
@@ -42,9 +49,27 @@ def obter_servico():
     return _servico
 
 
+def obter_analisador():
+    global _analisador
+    with _trava_analisador:
+        if _analisador is None:
+            from api.analise_upload import AnalisadorUpload
+            _analisador = AnalisadorUpload()
+        return _analisador
+
+
+def _aquecer_analisador():
+    """Carrega a U-Net em segundo plano, para a primeira analise nao esperar."""
+    try:
+        obter_analisador().modelo()
+    except Exception as erro:  # a API continua servindo os exames mesmo sem o modelo
+        print(f"[api] U-Net para envio de arquivos indisponível: {erro}", flush=True)
+
+
 @asynccontextmanager
 async def lifespan(app):
     obter_servico()  # carrega modelo e dados uma vez, na subida
+    threading.Thread(target=_aquecer_analisador, daemon=True).start()
     yield
 
 
@@ -60,7 +85,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -120,3 +145,44 @@ def fatia_png(exame_id: str, servico=Depends(obter_servico)):
 def mascara_png(exame_id: str, metodo: str, servico=Depends(obter_servico)):
     validar_metodo(metodo)
     return png(servico.segmentar(exame_id, metodo)[0])
+
+
+# --- Envio de arquivo pela tela: uma fatia analisada pelos tres metodos ---
+
+def _resposta_analise(registro):
+    base = f"/analises/{registro['id']}"
+    return {
+        "analise_id": registro["id"],
+        "arquivo": registro["arquivo"],
+        "tipo": registro["tipo"],
+        "modo": "modelo_real",
+        "gabarito": registro["gabarito"],
+        "avisos": registro["avisos"],
+        "fatia": {"largura": registro["largura"], "altura": registro["altura"], "url": f"{base}/fatia.png"},
+        "metodos": {
+            metodo: {"metricas": metricas, "mascara": {"url": f"{base}/{metodo}/mascara.png"}}
+            for metodo, metricas in registro["metodos"].items()
+        },
+    }
+
+
+@app.post("/analises")
+def analisar_arquivo(arquivo: UploadFile = File(...), analisador=Depends(obter_analisador)):
+    dados = arquivo.file.read()
+    return _resposta_analise(analisador.analisar(arquivo.filename, dados))
+
+
+@app.get("/analises/{analise_id}")
+def obter_analise(analise_id: str, analisador=Depends(obter_analisador)):
+    return _resposta_analise(analisador.obter(analise_id))
+
+
+@app.get("/analises/{analise_id}/fatia.png")
+def analise_fatia_png(analise_id: str, analisador=Depends(obter_analisador)):
+    return png(analisador.obter(analise_id)["fatia_png"])
+
+
+@app.get("/analises/{analise_id}/{metodo}/mascara.png")
+def analise_mascara_png(analise_id: str, metodo: str, analisador=Depends(obter_analisador)):
+    validar_metodo(metodo)
+    return png(analisador.obter(analise_id)["mascaras_png"][metodo])
