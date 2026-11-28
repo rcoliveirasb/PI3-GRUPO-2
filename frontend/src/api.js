@@ -17,8 +17,11 @@ export const NOMES_MODO = {
   modelo_real: 'Modelo rodando ao vivo',
 }
 
-async function pedir(caminho) {
-  const resposta = await fetch(`${API_URL}${caminho}`)
+// Formatos que a API analisa (POST /analises): uma fatia de tomografia.
+export const FORMATOS_ENVIO = '.png,.jpg,.jpeg,.dcm'
+
+async function pedir(caminho, opcoes) {
+  const resposta = await fetch(`${API_URL}${caminho}`, opcoes)
   if (!resposta.ok) {
     let detalhe = ''
     try { detalhe = (await resposta.json())?.detail?.mensagem ?? '' } catch { /* resposta sem JSON */ }
@@ -47,6 +50,27 @@ export async function segmentarTodos(exameId) {
   })
   return {
     fatia: { indice: respostas[0].fatia.indice, url: `${API_URL}${respostas[0].fatia.url}` },
+    metodos,
+  }
+}
+
+// Envia uma fatia (.png, .jpg ou .dcm) e a API roda os três métodos nela,
+// com a U-Net treinada. Devolve o mesmo formato de segmentarTodos, mais
+// { origem: 'envio', gabarito, avisos }. Dice/IoU só vêm quando a fatia tem gabarito.
+export async function analisarArquivo(arquivo) {
+  const corpo = new FormData()
+  corpo.append('arquivo', arquivo)
+  const r = await pedir('/analises', { method: 'POST', body: corpo })
+  const metodos = {}
+  METODOS.forEach(m => {
+    metodos[m.id] = { metricas: r.metodos[m.id].metricas, mascaraUrl: `${API_URL}${r.metodos[m.id].mascara.url}` }
+  })
+  return {
+    origem: 'envio',
+    arquivo: r.arquivo,
+    gabarito: r.gabarito,
+    avisos: r.avisos ?? [],
+    fatia: { indice: null, url: `${API_URL}${r.fatia.url}` },
     metodos,
   }
 }

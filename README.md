@@ -90,7 +90,11 @@ histórico do Teste A (26 exames), está em
   métricas. Tem três modos: `fixo` (valores inventados, só para testar a tela),
   `precalculado` (resultados reais de 3 exames, sem precisar dos dados) e `real` (modelos
   rodando ao vivo).
-- **Tela web (Pulmo Scan)**: escolhe um exame, roda os três métodos, mostra as máscaras
+- **Análise de uma imagem enviada**: a tela manda uma fatia de tomografia (`.png`, `.jpg` ou
+  `.dcm`) e a API roda os três métodos nela, ao vivo, com a U-Net treinada. Funciona em
+  qualquer modo, sem os dados. Mostra o Dice quando a fatia tem gabarito; para as outras
+  imagens, a área de pulmão encontrada.
+- **Tela web (Pulmo Scan)**: escolhe um exame do servidor ou envia uma imagem, roda os três métodos, mostra as máscaras
   sobre a fatia lado a lado com a tabela de Dice, IoU, volume e tempo, e salva o resultado
   em JSON. Um selo no rodapé diz de qual modo da API vêm os números.
 - **Análises de falha**: piores casos, traqueia marcada como pulmão e nódulos apagados pela
@@ -206,7 +210,10 @@ $env:API_MODO="precalculado"; uvicorn api.main:app
   - `real`: modelos rodando ao vivo. Precisa das tomografias; a pasta é definida por
     `API_RAIZ_DATASET`.
   - `fixo` (padrão, sem a variável): valores **inventados**, só para testar a tela.
-- Testes da API: `python -m pytest` (37 passam e 5 são pulados quando as tomografias não
+- **Envio de arquivo**: em qualquer modo, `POST /analises` recebe uma fatia (`.png`, `.jpg` ou
+  `.dcm`) e roda os três métodos nela com a U-Net oficial, que a API carrega ao subir. Exemplo:
+  `curl -F "arquivo=@fatia.png" http://127.0.0.1:8000/analises`.
+- Testes da API: `python -m pytest` (42 passam e 5 são pulados quando as tomografias não
   estão na máquina).
 - Rotas e formatos: [`docs/contrato_api.md`](docs/contrato_api.md). Mais detalhes em
   [`pji/README.md`](pji/README.md) e [`pji/api/README.md`](pji/api/README.md).
@@ -225,8 +232,19 @@ npm run dev
 - Em "Tomografia do servidor (LUNA16)", escolha um exame e clique em **Iniciar segmentação**.
   A tela mostra os três métodos lado a lado, com a máscara sobre a fatia e a tabela de Dice,
   IoU, volume e tempo do exame inteiro.
+- **Ou envie uma imagem**: clique em **Fazer Upload** (ou arraste o arquivo) com uma fatia de
+  tomografia em `.png`, `.jpg` ou `.dcm`, e clique em **Iniciar segmentação**. A API roda os três
+  métodos na imagem.
+  - Se a fatia for uma das que a API serve (por exemplo, a de
+    `http://127.0.0.1:8000/exames/teste-a-808059/fatia.png`), há gabarito, e a tela mostra o
+    Dice.
+  - Para outras imagens não há gabarito, e a tela mostra a área de pulmão. Os avisos em laranja
+    explicam as suposições (um PNG não guarda HU).
+  - A U-Net é 2D e dá o mesmo resultado na fatia e no exame inteiro. O baseline e o region
+    growing usam o volume 3D, e numa fatia isolada o resultado deles muda. Por isso esses
+    números não se comparam com a tabela do artigo.
 - O selo no rodapé diz de onde vêm os números. No modo `precalculado`, aparece "Resultados
-  reais pré-calculados".
+  reais pré-calculados". Numa imagem enviada, aparece "Modelo rodando ao vivo".
 - A tela procura a API em `http://localhost:8000`. Para outro endereço, defina a variável
   `VITE_API_URL` antes do `npm run dev`.
 
